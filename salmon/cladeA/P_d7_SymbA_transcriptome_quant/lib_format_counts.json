@@ -1,0 +1,22 @@
+{
+    "read_files": "[ P_d7_SymbA_transcriptome_1.fq, P_d7_SymbA_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 468859,
+    "num_assigned_fragments": 468859,
+    "num_frags_with_concordant_consistent_mappings": 498675,
+    "num_frags_with_inconsistent_or_orphan_mappings": 97752,
+    "strand_mapping_bias": 0.5012242442472552,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 249948,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 248727,
+    "SF": 46693,
+    "SR": 51059,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
