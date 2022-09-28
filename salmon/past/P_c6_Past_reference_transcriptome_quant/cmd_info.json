@@ -1,0 +1,11 @@
+{
+    "salmon_version": "1.6.0",
+    "index": "Past_index",
+    "libType": "A",
+    "mates1": "P_c6_Past_reference_transcriptome_1.fq",
+    "mates2": "P_c6_Past_reference_transcriptome_2.fq",
+    "threads": "8",
+    "validateMappings": [],
+    "output": "quants/P_c6_Past_reference_transcriptome_quant",
+    "auxDir": "aux_info"
+}
