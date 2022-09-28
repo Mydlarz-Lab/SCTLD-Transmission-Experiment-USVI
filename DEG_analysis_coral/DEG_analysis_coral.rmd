@@ -1,1 +1,1411 @@
+---
+title: "Differential Expression Analysis - Coral Genes"
+author: "Kelsey Beavers"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 
+# Required Packages
+```{r}
+library(tximport)
+library(tibble)
+library(DESeq2)
+library(dplyr)
+library(PCAtools)
+library(ggalt)
+library(ggplot2)
+library(lifecycle)
+library(ggvenn)
+library(VennDiagram)
+library(stringr)
+library(ggpubr)
+library(pheatmap)
+```
+
+
+# Colpophyllia natans
+
+## Tximport
+
+Read in the raw counts from Salmon for all cnat samples
+
+cnat samples: c2,c3,c4,c6,c8,d2,d3,d4,d6,d8
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/salmon/")
+cnat_samples <- read.table("cnat_samples.csv", header = TRUE)
+cnat_samples
+cnat_files <- file.path(cnat_samples$samples, "quant.sf")
+names(cnat_files) <- paste0("sample", 1:10)
+all(file.exists(cnat_files))
+cnat_tx2gene <- read.csv("cnat_tx2gene.csv")
+head(cnat_tx2gene)
+cnat_txi <- tximport(cnat_files, type = 'salmon',tx2gene=cnat_tx2gene)
+names(cnat_txi)
+tail(cnat_txi$counts)
+dim(cnat_txi$counts)
+# 13,692 contigs with evalue < 0.000001
+write.csv(cnat_txi, file = "cnat_txi_test.csv")
+write.csv(cnat_txi$counts, file="cnat_counts.csv",quote = FALSE)
+cnat_counts <- cnat_txi$counts
+colnames(cnat_counts)
+cnat_counts <- as.data.frame(cnat_counts)
+colnames(cnat_counts) <- c("cnat_c2","cnat_c3","cnat_c4","cnat_c6","cnat_c8","cnat_d2","cnat_d3","cnat_d4","cnat_d6","cnat_d8")
+cnat_counts <- tibble::rownames_to_column(cnat_counts,"Entry")
+cnat_counts[2:11] <-  round(cnat_counts[2:11], digits=0)
+cnat_counts <- as.data.frame(cnat_counts)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DESeq2/")
+write.csv(cnat_counts, file = "cnat_counts.csv",quote = FALSE)
+```
+
+## DESeq2
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DESeq2/")
+countData <- read.csv("cnat_counts.csv", row.names="Entry")
+colnames(countData)
+countData <- countData[,-c(1)]
+colData <- read.csv("./../../../metaData.csv", row.names = "name")
+cnatColData <- colData[colData$species == 'cnat',]
+rownames(cnatColData)
+colnames(countData)
+# Set the design. This design will test for the differences in expression caused by treatment 
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = cnatColData, 
+                                        design = ~genotype + treatment )
+# Filter out columns with an average number of reads less than 10. 
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+
+test <- DESeq(dds_treatment)
+res <- results(test)
+res
+resorderd <-res[order(res$padj),] 
+write.csv(resorderd, file = "DESeq_treatment.csv")
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+write.csv(rrld, file = "treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DESeq_treatment_master <- read.csv("DESeq_treatment.csv")
+DEGs <- DESeq_treatment_master %>% filter(padj < 0.05)
+write.csv(DEGs, file = "treatment_sig_DEGs.csv")
+
+# Annotate the significant DEGs
+colnames(DEGs)[colnames(DEGs)=="X"] <- "Entry"
+DEGs
+dim(DEGs)
+# 1350 unannotated DEGs
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+master <- merge(DEGs, uniprot, by="Entry")
+logs <- read.csv("treatment_rlog.csv")
+names(logs)
+names(logs)[colnames(logs)=="X"] <- "Entry"
+sig_master <- merge(master,logs, by="Entry")
+# 1350 annotated DEGs
+write.csv(sig_master, file = "treatment_annotated_sig_DEGs.csv")
+```
+
+## PCA
+
+```{r}
+# Remove all columns except for "Entry ID" and the counts
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DESeq2/")
+countData <- read.csv("treatment_rlog.csv", row.names="X")
+colnames(countData)
+Gene_expression <- as.matrix(countData)
+Metadata <- as.data.frame(read.csv("./../../../metaData.csv", header = TRUE, row.names = "name"))
+cnatMetadata <- Metadata[Metadata$species == 'cnat',]
+rownames(cnatMetadata)
+colnames(Gene_expression)
+p <- pca(Gene_expression, metadata = cnatMetadata,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+screeplot(p)
+
+cnatMetadata
+pdf(file="rlog_PCA.pdf",height=6,width=6)
+biplot(p,
+       lab = cnatMetadata$sample_number,
+       colby = "treatment", colkey = c('control'='blue','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-450,455), ylim = c(-220,150),
+       title = 'Rlog Gene Expression PCA',
+       legendPosition = 'right') 
+  dev.off()
+
+pdf(file="rlog_PCA_symbiont.pdf",height=6,width=6)
+biplot(p,
+       lab = cnatMetadata$sample_number,
+       colby = "dominant_clade",  colLegendTitle = 'Dominant \nSymbiont',
+       shape = "treatment",
+       ellipse = TRUE,
+       xlim=c(-150,200), ylim = c(-220,220),
+       title = 'Rlog Gene Expression PCA',
+       legendPosition = 'right') 
+dev.off()
+
+```
+
+
+## GO Enrichment Set Up
+
+Get files ready for ShinyGO (unline GUI)
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DESeq2/")
+all_genes <- read.csv("DESeq_treatment.csv")
+colnames(all_genes)[colnames(all_genes)=="X"] <- "Entry"
+names(all_genes)
+all_genes <- all_genes[,c(1,3,7)]
+
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+names(uniprot)
+uniprot <- uniprot[,c(1,3)]
+
+master <- merge(all_genes,uniprot,by="Entry")
+master
+names(master)
+master <- master %>% relocate(Gene.names, .after = Entry)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DEG_GOEnrichment/")
+master$Gene.names <- sub(" .*", "", master$Gene.names)
+names(master)
+master
+write.csv(master,file="all_genes.csv")
+
+
+DEGs <- read.csv("./../DESeq2/treatment_annotated_sig_DEGs.csv")
+names(DEGs)
+DEGs <- DEGs[,c(2,4,8,10)] #grab Entry, log2FoldChange, padj, and Gene.names
+names(DEGs)
+DEGs <- DEGs %>% relocate(Gene.names, .after =Entry)
+DEGs$Gene.names <- sub(" .*", "", DEGs$Gene.names)
+DEGs
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DEG_GOEnrichment/")
+write.csv(DEGs,file="cnat_DEGs.csv")
+```
+
+Navigate to http://bioinformatics.sdstate.edu/go/
+Select "Human" from the drop down menu
+Copy and paste Gene.names from "cnat_DEGs.csv" 
+Click "Background" and copy/paste Gene.names from "all_genes.csv"
+Select "GO Biological Process" from drop down menu
+Select "0.05" for FDR cutof, "10" for # pathways to show, "2" for Pathway size: Min. and "2000" for Max. 
+Select "Remove redundancy" and "Abbreviate pathways"
+Wait for results and download "Top Pathways shown above" table with gene IDs as "all_enrichment.csv"
+
+In Excel, sort "all_enrichment.csv" by decreased Fold Enrichment and keep top 5 nonredundant terms, name this file "All_enrichment_curated.csv"
+
+Repeat with same parameters for "GO Molecular Function" drop down
+
+# Montastraea cavernosa
+
+## Tximport
+
+Read in the raw counts from Salmon for all mcav samples
+
+mcav: c1,c3,c5,c6,c7,c8,d1,d2,d3,d4,d5,d6,d8
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/salmon/")
+mcav_samples <- read.table("mcav_samples.csv", header = TRUE)
+mcav_samples
+mcav_files <- file.path(mcav_samples$sample, "quant.sf")
+names(mcav_files) <- paste0("sample", 1:13)
+all(file.exists(mcav_files))
+mcav_tx2gene <- read.csv("mcav_tx2gene.csv")
+head(mcav_tx2gene)
+mcav_txi <- tximport(mcav_files, type = 'salmon',tx2gene=mcav_tx2gene)
+names(mcav_txi)
+tail(mcav_txi$counts)
+dim(mcav_txi$counts)
+# 11,628 contigs with evalue < 0.000001
+write.csv(mcav_txi, file = "mcav_txi.csv")
+write.csv(mcav_txi$counts, file="mcav_counts.csv",quote = FALSE)
+mcav_counts <- mcav_txi$counts
+colnames(mcav_counts)
+mcav_counts <- as.data.frame(mcav_counts)
+colnames(mcav_counts) <- c("mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8")
+mcav_counts <- tibble::rownames_to_column(mcav_counts,"Entry")
+mcav_counts[2:14] <-  round(mcav_counts[2:14], digits=0)
+mcav_counts <- as.data.frame(mcav_counts)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/DESeq2/")
+write.csv(mcav_counts, file = "mcav_counts.csv",quote = FALSE)
+```
+
+## DESeq2
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/DESeq2/")
+countData <- read.csv("mcav_counts.csv", row.names="Entry")
+colnames(countData)
+countData <- countData[,-c(1)]
+colData <- read.csv("./../../../metaData.csv", row.names = "name")
+mcavColData <- colData[colData$species == 'mcav',]
+rownames(mcavColData)
+colnames(countData)
+# Set the design. This design will test for the differences in expression caused by treatment 
+# Filter out columns with an average number of reads less than 10. 
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = mcavColData, 
+                                        design = ~genotype + treatment )
+
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+
+test <- DESeq(dds_treatment)
+res <- results(test)
+res
+resorderd <-res[order(res$padj),] 
+write.csv(resorderd, file = "DESeq_treatment.csv")
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+write.csv(rrld, file = "treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DESeq_treatment_master <- read.csv("DESeq_treatment.csv")
+DEGs <- DESeq_treatment_master %>% filter(padj < 0.05)
+# 385 DEGs
+write.csv(DEGs, file = "treatment_sig_DEGs.csv")
+
+#Annotate the significant DEGs
+colnames(DEGs)[colnames(DEGs)=="X"] <- "Entry"
+DEGs
+dim(DEGs)
+# 385 unannotated DEGs
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+master <- merge(DEGs, uniprot, by="Entry")
+logs <- read.csv("treatment_rlog.csv")
+names(logs)
+names(logs)[colnames(logs)=="X"] <- "Entry"
+sig_master <- merge(master,logs, by="Entry")
+# 385 annotated DEGs
+write.csv(sig_master, file = "treatment_annotated_sig_DEGs.csv")
+```
+
+## PCA
+
+```{r}
+# Remove all columns except for "Entry ID" and the counts
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/DESeq2/")
+countData <- read.csv("treatment_rlog.csv", row.names="X")
+colnames(countData)
+Gene_expression <- as.matrix(countData)
+Metadata <- as.data.frame(read.csv("./../../../metaData.csv", header = TRUE, row.names = "name"))
+mcavMetadata <- Metadata[Metadata$species == 'mcav',]
+rownames(mcavMetadata)
+colnames(Gene_expression)
+p <- pca(Gene_expression, metadata = mcavMetadata,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+screeplot(p)
+
+mcavMetadata
+pdf(file="rlog_PCA.pdf",height=6,width=6)
+biplot(p,
+       lab = mcavMetadata$sample_number,
+       colby = "treatment", colkey = c('control'='blue','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-100,75), ylim = c(-50,65),
+       title = 'Rlog Gene Expression PCA',
+       legendPosition = 'right') 
+  dev.off()
+```
+
+## GO Enrichment Set Up
+
+Get files ready for ShinyGO (unline GUI)
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/DESeq2/")
+all_genes <- read.csv("DESeq_treatment.csv")
+colnames(all_genes)[colnames(all_genes)=="X"] <- "Entry"
+names(all_genes)
+all_genes <- all_genes[,c(1,3,7)]
+
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+names(uniprot)
+uniprot <- uniprot[,c(1,3)]
+
+master <- merge(all_genes,uniprot,by="Entry")
+master
+names(master)
+master <- master %>% relocate(Gene.names, .after = Entry)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/DEG_GOEnrichment/")
+master$Gene.names <- sub(" .*", "", master$Gene.names)
+names(master)
+master
+write.csv(master,file="all_genes.csv")
+
+
+DEGs <- read.csv("./../DESeq2/treatment_annotated_sig_DEGs.csv")
+names(DEGs)
+DEGs <- DEGs[,c(2,4,8,10)] #grab Entry, log2FoldChange, padj, and Gene.names
+names(DEGs)
+DEGs <- DEGs %>% relocate(Gene.names, .after =Entry)
+DEGs$Gene.names <- sub(" .*", "", DEGs$Gene.names)
+DEGs
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/DEG_GOEnrichment/")
+write.csv(DEGs,file="mcav_DEGs.csv")
+```
+
+Navigate to http://bioinformatics.sdstate.edu/go/
+Select "Human" from the drop down menu
+Copy and paste Gene.names from "mcav_DEGs.csv" 
+Click "Background" and copy/paste Gene.names from "all_genes.csv"
+Select "GO Biological Process" from drop down menu
+Select "0.05" for FDR cutof, "10" for # pathways to show, "2" for Pathway size: Min. and "2000" for Max. 
+Select "Remove redundancy" and "Abbreviate pathways"
+Wait for results and download "Top Pathways shown above" table with gene IDs as "all_enrichment.csv"
+
+In Excel, sort "all_enrichment.csv" by decreased Fold Enrichment and keep top 5 nonredundant terms, name this file "All_enrichment_curated.csv"
+
+Repeat with same parameters for "GO Molecular Function" drop down
+
+# Orbicella annularis
+
+## Tximport
+
+Read in the raw counts from Salmon for all oann samples
+
+oann: c1,c2,c3,c6,c7,c8,d1,d3,d6,d7,d8
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/salmon/")
+oann_samples <- read.table("oann_samples.csv", header = TRUE)
+oann_samples
+oann_files <- file.path(oann_samples$sample, "quant.sf")
+names(oann_files) <- paste0("sample", 1:11)
+all(file.exists(oann_files))
+oann_tx2gene <- read.csv("oann_tx2gene.csv")
+head(oann_tx2gene)
+oann_txi <- tximport(oann_files, type = 'salmon',tx2gene=oann_tx2gene)
+names(oann_txi)
+tail(oann_txi$counts)
+dim(oann_txi$counts)
+# 13,138 contigs with evalue < 0.000001
+write.csv(oann_txi, file = "oann_txi.csv")
+write.csv(oann_txi$counts, file="oann_counts.csv",quote = FALSE)
+oann_counts <- oann_txi$counts
+colnames(oann_counts)
+oann_counts <- as.data.frame(oann_counts)
+colnames(oann_counts) <- c("oann_c1","oann_c2","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8")
+oann_counts <- tibble::rownames_to_column(oann_counts,"Entry")
+oann_counts[2:12] <-  round(oann_counts[2:12], digits=0)
+oann_counts <- as.data.frame(oann_counts)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/DESeq2/")
+write.csv(oann_counts, file = "oann_counts.csv",quote = FALSE)
+```
+
+## DESeq2
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/DESeq2/")
+countData <- read.csv("oann_counts.csv", row.names="Entry")
+colnames(countData)
+countData <- countData[,-c(1)]
+colData <- read.csv("./../../../metaData.csv", row.names = "name")
+oannColData <- colData[colData$species == 'oann',]
+rownames(oannColData)
+colnames(countData)
+# Set the design. This design will test for the differences in expression caused by treatment 
+# Filter out columns with an average number of reads less than 10. 
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = oannColData, 
+                                        design = ~genotype + treatment )
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+
+test <- DESeq(dds_treatment)
+res <- results(test)
+res
+resorderd <-res[order(res$padj),] 
+write.csv(resorderd, file = "DESeq_treatment.csv")
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+write.csv(rrld, file = "treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DESeq_treatment_master <- read.csv("DESeq_treatment.csv")
+DEGs <- DESeq_treatment_master %>% filter(padj < 0.05)
+# 229 DEGs
+write.csv(DEGs, file = "treatment_sig_DEGs.csv")
+
+# Annotate the significant DEGs
+colnames(DEGs)[colnames(DEGs)=="X"] <- "Entry"
+DEGs
+dim(DEGs)
+# 229 unannotated DEGs
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+master <- merge(DEGs, uniprot, by="Entry")
+logs <- read.csv("treatment_rlog.csv")
+names(logs)
+names(logs)[colnames(logs)=="X"] <- "Entry"
+sig_master <- merge(master,logs, by="Entry")
+# 229 annotated DEGs
+write.csv(sig_master, file = "treatment_annotated_sig_DEGs.csv")
+```
+
+## PCA
+
+```{r}
+# Remove all columns except for "Entry ID" and the counts
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/DESeq2/")
+countData <- read.csv("treatment_rlog.csv", row.names="X")
+colnames(countData)
+Gene_expression <- as.matrix(countData)
+Metadata <- as.data.frame(read.csv("./../../../metaData.csv", header = TRUE, row.names = "name"))
+oannMetadata <- Metadata[Metadata$species == 'oann',]
+rownames(oannMetadata)
+colnames(Gene_expression)
+p <- pca(Gene_expression, metadata = oannMetadata,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+screeplot(p)
+
+oannMetadata
+pdf(file="rlog_PCA.pdf",height=6,width=6)
+biplot(p,
+       lab = oannMetadata$sample_number,
+       colby = "treatment", colkey = c('control'='blue','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-90,100), ylim = c(-90,90),
+       title = 'Rlog Gene Expression PCA',
+       legendPosition = 'right') 
+  dev.off()
+```
+
+## GO Enrichment Set Up
+
+Get files ready for ShinyGO (unline GUI)
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/DESeq2/")
+all_genes <- read.csv("DESeq_treatment.csv")
+colnames(all_genes)[colnames(all_genes)=="X"] <- "Entry"
+names(all_genes)
+all_genes <- all_genes[,c(1,3,7)]
+
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+names(uniprot)
+uniprot <- uniprot[,c(1,3)]
+
+master <- merge(all_genes,uniprot,by="Entry")
+master
+names(master)
+master <- master %>% relocate(Gene.names, .after = Entry)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/DEG_GOEnrichment/")
+master$Gene.names <- sub(" .*", "", master$Gene.names)
+names(master)
+master
+write.csv(master,file="all_genes.csv")
+
+
+DEGs <- read.csv("./../DESeq2/treatment_annotated_sig_DEGs.csv")
+names(DEGs)
+DEGs <- DEGs[,c(2,4,8,10)] #grab Entry, log2FoldChange, padj, and Gene.names
+names(DEGs)
+DEGs <- DEGs %>% relocate(Gene.names, .after =Entry)
+DEGs$Gene.names <- sub(" .*", "", DEGs$Gene.names)
+DEGs
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/DEG_GOEnrichment/")
+write.csv(DEGs,file="oann_DEGs.csv")
+```
+
+Navigate to http://bioinformatics.sdstate.edu/go/
+Select "Human" from the drop down menu
+Copy and paste Gene.names from "oann_DEGs.csv" 
+Click "Background" and copy/paste Gene.names from "all_genes.csv"
+Select "GO Biological Process" from drop down menu
+Select "0.05" for FDR cutof, "10" for # pathways to show, "2" for Pathway size: Min. and "2000" for Max. 
+Select "Remove redundancy" and "Abbreviate pathways"
+Wait for results and download "Top Pathways shown above" table with gene IDs as "all_enrichment.csv"
+
+In Excel, sort "all_enrichment.csv" by decreased Fold Enrichment and keep top 5 nonredundant terms, name this file "All_enrichment_curated.csv"
+
+Repeat with same parameters for "GO Molecular Function" drop down
+
+# Porites astreoides
+
+## Tximport
+
+Read in the raw counts from Salmon for all past samples
+
+past: c1,c5,c6,c7,d1,d2,d3,d4,d5,d6,d7
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/salmon/")
+past_samples <- read.table("past_samples.csv", header = TRUE)
+past_samples
+past_files <- file.path(past_samples$sample, "quant.sf")
+names(past_files) <- paste0("sample", 1:11)
+all(file.exists(past_files))
+past_tx2gene <- read.csv("past_tx2gene.csv")
+head(past_tx2gene)
+past_txi <- tximport(past_files, type = 'salmon',tx2gene=past_tx2gene)
+names(past_txi)
+tail(past_txi$counts)
+dim(past_txi$counts)
+# 13271 contigs with evalue < 0.000001
+write.csv(past_txi, file = "past_txi.csv")
+write.csv(past_txi$counts, file="past_counts.csv",quote = FALSE)
+past_counts <- past_txi$counts
+colnames(past_counts)
+past_counts <- as.data.frame(past_counts)
+colnames(past_counts) <- c("past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7")
+past_counts <- tibble::rownames_to_column(past_counts,"Entry")
+past_counts[2:12] <-  round(past_counts[2:12], digits=0)
+past_counts <- as.data.frame(past_counts)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DESeq2//")
+write.csv(past_counts, file = "past_counts.csv",quote = FALSE)
+```
+
+## DESeq2
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DESeq2/")
+countData <- read.csv("past_counts.csv", row.names="Entry")
+colnames(countData)
+countData <- countData[,-c(1)]
+colData <- read.csv("./../../../metaData.csv", row.names = "name")
+pastColData <- colData[colData$species == 'past',]
+rownames(pastColData)
+colnames(countData)
+# Set the design. This design will test for the differences in expression caused by treatment 
+# Filter out columns with an average number of reads less than 10. 
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = pastColData, 
+                                        design = ~genotype + treatment )
+
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+test <- DESeq(dds_treatment)
+res <- results(test)
+res
+resorderd <-res[order(res$padj),] 
+write.csv(resorderd, file = "DESeq_treatment.csv")
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+write.csv(rrld, file = "treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DESeq_treatment_master <- read.csv("DESeq_treatment.csv")
+DEGs <- DESeq_treatment_master %>% filter(padj < 0.05)
+# 42 DEGs
+write.csv(DEGs, file = "treatment_sig_DEGs.csv")
+
+# Annotate the significant DEGs
+colnames(DEGs)[colnames(DEGs)=="X"] <- "Entry"
+DEGs
+dim(DEGs)
+# 42 unannotated DEGs
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+master <- merge(DEGs, uniprot, by="Entry")
+logs <- read.csv("treatment_rlog.csv")
+names(logs)
+names(logs)[colnames(logs)=="X"] <- "Entry"
+sig_master <- merge(master,logs, by="Entry")
+# 42 annotated DEGs
+write.csv(sig_master, file = "treatment_annotated_sig_DEGs.csv")
+```
+
+## PCA
+
+```{r}
+# Remove all columns except for "Entry ID" and the counts
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DESeq2/")
+countData <- read.csv("treatment_rlog.csv", row.names="X")
+colnames(countData)
+Gene_expression <- as.matrix(countData)
+Metadata <- as.data.frame(read.csv("./../../../metaData.csv", header = TRUE, row.names = "name"))
+pastMetadata <- Metadata[Metadata$species == 'past',]
+rownames(pastMetadata)
+colnames(Gene_expression)
+p <- pca(Gene_expression, metadata = pastMetadata,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+screeplot(p)
+
+pastMetadata
+pdf(file="rlog_PCA.pdf",height=6,width=6)
+biplot(p,
+       lab = pastMetadata$sample_number,
+       colby = "treatment", colkey = c('control'='blue','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-150,150), ylim = c(-150,110),
+       title = 'Rlog Gene Expression PCA',
+       legendPosition = 'right') 
+  dev.off()
+```
+
+## GO Enrichment Set Up
+
+Get files ready for ShinyGO (unline GUI)
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DESeq2/")
+all_genes <- read.csv("DESeq_treatment.csv")
+colnames(all_genes)[colnames(all_genes)=="X"] <- "Entry"
+names(all_genes)
+all_genes <- all_genes[,c(1,3,7)]
+
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+names(uniprot)
+uniprot <- uniprot[,c(1,3)]
+
+master <- merge(all_genes,uniprot,by="Entry")
+master
+names(master)
+master <- master %>% relocate(Gene.names, .after = Entry)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DEG_GOEnrichment/")
+master$Gene.names <- sub(" .*", "", master$Gene.names)
+names(master)
+master
+write.csv(master,file="all_genes.csv")
+
+
+DEGs <- read.csv("./../DESeq2/treatment_annotated_sig_DEGs.csv")
+names(DEGs)
+DEGs <- DEGs[,c(2,4,8,10)] #grab Entry, log2FoldChange, padj, and Gene.names
+names(DEGs)
+DEGs <- DEGs %>% relocate(Gene.names, .after =Entry)
+DEGs$Gene.names <- sub(" .*", "", DEGs$Gene.names)
+DEGs
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DEG_GOEnrichment/")
+write.csv(DEGs,file="past_DEGs.csv")
+```
+
+Navigate to http://bioinformatics.sdstate.edu/go/
+Select "Human" from the drop down menu
+Copy and paste Gene.names from "past_DEGs.csv" 
+Click "Background" and copy/paste Gene.names from "all_genes.csv"
+Select "GO Biological Process" from drop down menu
+Select "0.05" for FDR cutof, "10" for # pathways to show, "2" for Pathway size: Min. and "2000" for Max. 
+Select "Remove redundancy" and "Abbreviate pathways"
+Wait for results and download "Top Pathways shown above" table with gene IDs as "all_enrichment.csv"
+
+In Excel, sort "all_enrichment.csv" by decreased Fold Enrichment and keep top 5 nonredundant terms, name this file "All_enrichment_curated.csv"
+
+Repeat with same parameters for "GO Molecular Function" drop down
+
+# Pseudodiploria strigosa
+
+## Tximport
+
+Read in the raw counts from Salmon for all pstr samples
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/salmon/")
+past_samples <- read.table("past_samples.csv", header = TRUE)
+past_samples
+past_files <- file.path(past_samples$sample, "quant.sf")
+names(past_files) <- paste0("sample", 1:11)
+all(file.exists(past_files))
+past_tx2gene <- read.csv("past_tx2gene.csv")
+head(past_tx2gene)
+past_txi <- tximport(past_files, type = 'salmon',tx2gene=past_tx2gene)
+names(past_txi)
+tail(past_txi$counts)
+dim(past_txi$counts)
+# 13271 contigs with evalue < 0.000001
+write.csv(past_txi, file = "past_txi.csv")
+write.csv(past_txi$counts, file="past_counts.csv",quote = FALSE)
+past_counts <- past_txi$counts
+colnames(past_counts)
+past_counts <- as.data.frame(past_counts)
+colnames(past_counts) <- c("past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7")
+past_counts <- tibble::rownames_to_column(past_counts,"Entry")
+past_counts[2:12] <-  round(past_counts[2:12], digits=0)
+past_counts <- as.data.frame(past_counts)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DESeq2//")
+write.csv(past_counts, file = "past_counts.csv",quote = FALSE)
+```
+pstr: c3,c5,c7,c8,d3,d5,d7
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/pstr/salmon/")
+pstr_samples <- read.table("pstr_samples.csv", header = TRUE)
+pstr_samples
+pstr_files <- file.path(pstr_samples$sample, "quant.sf")
+names(pstr_files) <- paste0("sample", 1:7)
+all(file.exists(pstr_files))
+pstr_tx2gene <- read.csv("pstr_tx2gene.csv")
+head(pstr_tx2gene)
+pstr_txi <- tximport(pstr_files, type = 'salmon',tx2gene=pstr_tx2gene)
+names(pstr_txi)
+tail(pstr_txi$counts)
+dim(pstr_txi$counts)
+# 9796 contigs with evalue < 0.000001
+write.csv(pstr_txi, file = "pstr_txi.csv")
+write.csv(pstr_txi$counts, file="pstr_counts.csv",quote = FALSE)
+pstr_counts <- pstr_txi$counts
+colnames(pstr_counts)
+pstr_counts <- as.data.frame(pstr_counts)
+colnames(pstr_counts) <- c("pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7")
+pstr_counts <- tibble::rownames_to_column(pstr_counts,"Entry")
+pstr_counts[2:8] <-  round(pstr_counts[2:8], digits=0)
+pstr_counts <- as.data.frame(pstr_counts)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/pstr/DESeq2/")
+write.csv(pstr_counts, file = "pstr_counts.csv",quote = FALSE)
+```
+
+## DESeq2
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/pstr/DESeq2/")
+countData <- read.csv("pstr_counts.csv", row.names="Entry")
+colnames(countData)
+countData <- countData[,-c(1)]
+colData <- read.csv("./../../../metaData.csv", row.names = "name")
+pstrColData <- colData[colData$species == 'pstr',]
+rownames(pstrColData)
+colnames(countData)
+# Set the design. This design will test for the differences in expression caused by treatment 
+# Filter out columns with an average number of reads less than 10. 
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = pstrColData, 
+                                        design = ~genotype + treatment )
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+test <- DESeq(dds_treatment)
+res <- results(test)
+res
+resorderd <-res[order(res$padj),] 
+write.csv(resorderd, file = "DESeq_treatment.csv")
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+write.csv(rrld, file = "treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DESeq_treatment_master <- read.csv("DESeq_treatment.csv")
+DEGs <- DESeq_treatment_master %>% filter(padj < 0.05)
+# 90 DEGs
+write.csv(DEGs, file = "treatment_sig_DEGs.csv")
+
+# Annotate the significant DEGs
+colnames(DEGs)[colnames(DEGs)=="X"] <- "Entry"
+DEGs
+dim(DEGs)
+# 90 unannotated DEGs
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+master <- merge(DEGs, uniprot, by="Entry")
+logs <- read.csv("treatment_rlog.csv")
+names(logs)
+names(logs)[colnames(logs)=="X"] <- "Entry"
+sig_master <- merge(master,logs, by="Entry")
+# 90 annotated DEGs
+write.csv(sig_master, file = "treatment_annotated_sig_DEGs.csv")
+```
+
+## PCA
+
+```{r}
+# Remove all columns except for "Entry ID" and the counts
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/pstr/DESeq2/")
+countData <- read.csv("treatment_rlog.csv", row.names="X")
+colnames(countData)
+Gene_expression <- as.matrix(countData)
+Metadata <- as.data.frame(read.csv("./../../../metaData.csv", header = TRUE, row.names = "name"))
+pstrMetadata <- Metadata[Metadata$species == 'pstr',]
+rownames(pstrMetadata)
+colnames(Gene_expression)
+p <- pca(Gene_expression, metadata = pstrMetadata,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+screeplot(p)
+
+pstrMetadata
+pdf(file="rlog_PCA.pdf",height=6,width=6)
+biplot(p,
+       lab = pstrMetadata$sample_number,
+       colby = "treatment", colkey = c('control'='blue','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-50,80), ylim = c(-80,65),
+       title = 'Rlog Gene Expression PCA',
+       legendPosition = 'right') 
+  dev.off()
+```
+
+## GO Enrichment Set Up
+
+Get files ready for ShinyGO (unline GUI)
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DESeq2/")
+all_genes <- read.csv("DESeq_treatment.csv")
+colnames(all_genes)[colnames(all_genes)=="X"] <- "Entry"
+names(all_genes)
+all_genes <- all_genes[,c(1,3,7)]
+
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+names(uniprot)
+uniprot <- uniprot[,c(1,3)]
+
+master <- merge(all_genes,uniprot,by="Entry")
+master
+names(master)
+master <- master %>% relocate(Gene.names, .after = Entry)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/pstr/DEG_GOEnrichment/")
+master$Gene.names <- sub(" .*", "", master$Gene.names)
+names(master)
+master
+write.csv(master,file="all_genes.csv")
+
+
+DEGs <- read.csv("./../DESeq2/treatment_annotated_sig_DEGs.csv")
+names(DEGs)
+DEGs <- DEGs[,c(2,4,8,10)] #grab Entry, log2FoldChange, padj, and Gene.names
+names(DEGs)
+DEGs <- DEGs %>% relocate(Gene.names, .after =Entry)
+DEGs$Gene.names <- sub(" .*", "", DEGs$Gene.names)
+DEGs
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/pstr/DEG_GOEnrichment/")
+write.csv(DEGs,file="pstr_DEGs.csv")
+```
+
+Navigate to http://bioinformatics.sdstate.edu/go/
+Select "Human" from the drop down menu
+Copy and paste Gene.names from "pstr_DEGs.csv" 
+Click "Background" and copy/paste Gene.names from "all_genes.csv"
+Select "GO Biological Process" from drop down menu
+Select "0.05" for FDR cutof, "10" for # pathways to show, "2" for Pathway size: Min. and "2000" for Max. 
+Select "Remove redundancy" and "Abbreviate pathways"
+Wait for results and download "Top Pathways shown above" table with gene IDs as "all_enrichment.csv"
+
+In Excel, sort "all_enrichment.csv" by decreased Fold Enrichment and keep top 5 nonredundant terms, name this file "All_enrichment_curated.csv"
+
+Repeat with same parameters for "GO Molecular Function" drop down
+
+# Analysis of Shared Genes (inferred homologs)
+
+## Merge Raw Counts
+Obtain shared genes
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/")
+cnat <- read.csv("./cnat/DESeq2/cnat_counts.csv")
+cnat <- cnat[,-c(1)]
+names(cnat)
+# [1] "Entry"   "cnat_c2" "cnat_c3" "cnat_c4" "cnat_c6" "cnat_c8" "cnat_d2" "cnat_d3" "cnat_d4" "cnat_d6" "cnat_d8"
+
+mcav <- read.csv("./mcav/DESeq2/mcav_counts.csv")
+mcav <- mcav[,-c(1)]
+names(mcav)
+# [1] "Entry"   "mcav_c1" "mcav_c3" "mcav_c5" "mcav_c6" "mcav_c7" "mcav_c8" "mcav_d1" "mcav_d2" "mcav_d3" "mcav_d4" "mcav_d5" "mcav_d6" "mcav_d8"
+
+oann <- read.csv("./oann/DESeq2/oann_counts.csv")
+oann <- oann[,-c(1)]
+names(oann)
+#[1] "Entry"   "oann_c1" "oann_c2" "oann_c3" "oann_c6" "oann_c7" "oann_c8" "oann_d1" "oann_d3" "oann_d6" "oann_d7" "oann_d8"
+
+past <- read.csv("./past/DESeq2/past_counts.csv")
+past <- past[,-c(1)]
+names(past)
+# [1] "Entry"   "past_c1" "past_c5" "past_c6" "past_c7" "past_d1" "past_d2" "past_d3" "past_d4" "past_d5" "past_d6" "past_d7"
+
+pstr <- read.csv("./pstr/DESeq2/pstr_counts.csv")
+pstr <- pstr[,-c(1)]
+names(pstr)
+# [1] "Entry"   "pstr_c3" "pstr_c5" "pstr_c7" "pstr_c8" "pstr_d3" "pstr_d5" "pstr_d7"
+
+dim(cnat) #13,692
+dim(mcav) #11,628
+dim(oann) #13,138
+dim(past) #13,271
+dim(pstr) #9796
+
+cnat_mcav <- merge(cnat,mcav,by="Entry") 
+names(cnat_mcav)
+dim(cnat_mcav) #5,561
+
+cnat_mcav_oann <- merge(cnat_mcav,oann,by="Entry")
+names(cnat_mcav_oann)
+dim(cnat_mcav_oann) #4,405
+
+cnat_mcav_oann_past <- merge(cnat_mcav_oann, past, by="Entry")
+names(cnat_mcav_oann_past)
+dim(cnat_mcav_oann_past) #3,121
+
+master <- merge(cnat_mcav_oann_past,pstr,by="Entry")
+names(master)
+dim(master) #2,149
+
+master <- master[ !duplicated(master$Entry), ]  
+dim(master) #2,149
+
+getwd()
+setwd("./all/DESeq2/")
+write.csv(master,file = "sharedGenes_counts.csv")
+```
+
+## Venn Diagram - Shared Genes
+```{r}
+# Manipulate 'x' with hashes and plot combinations of shared genes with ggvenn to obtain values for venn.plot (five-way Venn requires manual value input)
+
+x <- list(
+  #cnat = cnat$Entry,
+  #oann = oann$Entry,
+  #pstr = pstr$Entry,
+  past = past$Entry,
+  mcav = mcav$Entry
+)
+
+ggvenn(
+  x,
+  #fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"),
+  stroke_size = 0.5, set_name_size = 5
+)
+dev.off()
+
+pdf(file = "sharedGenes_Venn.pdf",height = 5,width = 6)
+venn.plot <- draw.quintuple.venn(
+  area1 = 13692,area2 = 13138,area3 = 9796,area4 = 13271,area5 = 11628,
+  n12 = 6349,n13 = 5799,n14 = 5719,n15 = 5561,
+  n23 = 5140,n24 = 6408,n25 = 7401,
+  n34 = 4618,n35 = 4588,
+  n45 = 5908,
+  n123 = 3870, n124 = 3993,n125 = 4405,
+  n134 = 3396,n135 = 3415,n145 = 3632,
+  n234 = 3361,n235 = 3659,n245 = 4630,
+  n345 = 3045,n1234 = 2699,n1235 = 2880,n1245 = 3121,
+  n1345 = 2425,n2345 = 2613,
+  n12345 = 2149,
+  category = c("CNAT\n n=13629", "OANN\n n=13138", "PSTR\n n=9796", "PAST\n n=13271", "MCAV\n n=11628"),
+  fill = c("dodgerblue", "goldenrod1", "darkorange1", "seagreen3", "orchid3"),
+  cat.col = c("dodgerblue", "goldenrod1", "darkorange1", "seagreen3", "orchid3"),
+    cat.cex = 2,
+  margin = 0.05,
+  cex = c(
+    1.5, 1.5, 1.5, 1.5, 1.5, 1, 0.8, 1, 0.8, 1, 0.8, 1, 0.8, 1, 0.8,
+    1, 0.55, 1, 0.55, 1, 0.55, 1, 0.55, 1, 0.55, 1, 1, 1, 1, 1, 1.5),
+  ind = TRUE)
+dev.off()
+
+```
+
+## Venn Diagram - DEGs
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/")
+cnat <- read.csv("./cnat/DESeq2/treatment_annotated_sig_DEGs.csv")
+cnat <- cnat[,c(2,14:23)]
+names(cnat)
+# [1] "Entry"   "cnat_c2" "cnat_c3" "cnat_c4" "cnat_c6" "cnat_c8" "cnat_d2" "cnat_d3" "cnat_d4" "cnat_d6" "cnat_d8"
+
+mcav <- read.csv("./mcav/DESeq2/treatment_annotated_sig_DEGs.csv")
+mcav <- mcav[,c(2,14:26)]
+names(mcav)
+# [1] "Entry"   "mcav_c1" "mcav_c3" "mcav_c5" "mcav_c6" "mcav_c7" "mcav_c8" "mcav_d1" "mcav_d2" "mcav_d3" "mcav_d4" "mcav_d5" "mcav_d6" "mcav_d8"
+
+oann <- read.csv("./oann/DESeq2/treatment_annotated_sig_DEGs.csv")
+oann <- oann[,c(2,14:24)]
+names(oann)
+#[1] "Entry"   "oann_c1" "oann_c2" "oann_c3" "oann_c6" "oann_c7" "oann_c8" "oann_d1" "oann_d3" "oann_d6" "oann_d7" "oann_d8"
+
+past <- read.csv("./past/DESeq2/treatment_annotated_sig_DEGs.csv")
+past <- past[,c(2,14:24)]
+names(past)
+# [1] "Entry"   "past_c1" "past_c5" "past_c6" "past_c7" "past_d1" "past_d2" "past_d3" "past_d4" "past_d5" "past_d6" "past_d7"
+
+pstr <- read.csv("./pstr/DESeq2/treatment_annotated_sig_DEGs.csv")
+pstr <- pstr[,c(2,14:20)]
+names(pstr)
+# [1] "Entry"   "pstr_c3" "pstr_c5" "pstr_c7" "pstr_c8" "pstr_d3" "pstr_d5" "pstr_d7"
+
+dim(cnat) #1350
+dim(mcav) #385
+dim(oann) #229
+dim(past) #42
+dim(pstr) #90
+
+x <- list(
+  #cnat = cnat$Entry,
+  oann = oann$Entry,
+  #pstr = pstr$Entry,
+  #past = past$Entry,
+  mcav = mcav$Entry
+)
+
+ggvenn(
+  x,
+  #fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"),
+  stroke_size = 0.5, set_name_size = 5
+)
+dev.off()
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/figures/")
+pdf(file = "DEGs_Venn.pdf",height = 5,width = 6)
+venn.plot <- draw.quintuple.venn(
+  area1 = 1350,area2 = 229,area3 = 90,area4 = 42,area5 = 385,
+  n12 = 45,n13 = 14,n14 = 9,n15 = 71,
+  n23 = 4,n24 = 3,n25 = 28,
+  n34 = 0,n35 = 9,
+  n45 = 7,
+  n123 = 3, n124 = 1,n125 = 10,
+  n134 = 0,n135 = 2,n145 = 3,
+  n234 = 0,n235 = 3,n245 = 2,
+  n345 = 0,n1234 = 0,n1235 = 2,n1245 = 1,
+  n1345 = 0,n2345 = 0,
+  n12345 = 0,
+  category = c("CNAT", "OANN", "PSTR", "PAST", "MCAV"),
+  fill = c("dodgerblue", "goldenrod1", "darkorange1", "seagreen3", "orchid3"),
+  cat.col = c("dodgerblue", "goldenrod1", "darkorange1", "seagreen3", "orchid3"),
+  #  cat.cex = 2,
+  margin = 0.05,
+  cex = c(
+    1.5, 1.5, 1.5, 1.5, 1.5, 1, 0.8, 1, 0.8, 1, 0.8, 1, 0.8, 1, 0.8,
+    1, 0.55, 1, 0.55, 1, 0.55, 1, 0.55, 1, 0.55, 1, 1, 1, 1, 1, 1.5),
+  ind = TRUE)
+dev.off()
+
+```
+
+## DESeq2
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/")
+countData <- read.csv("sharedGenes_counts.csv", row.names="Entry")
+colnames(countData)
+colData <- read.csv("metaData.csv", row.names = "name")
+colData
+rownames(colData)
+colnames(countData)
+countData <- countData[,-c(1)]
+colnames(colData)
+# Set the design. This design will test for the differences in expression caused by treatment 
+# Filter out columns with an average number of reads less than 10. 
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = colData, 
+                                        design = ~species + treatment )
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+test <- DESeq(dds_treatment)
+res <- results(test)
+res
+resorderd <-res[order(res$padj),] 
+write.csv(resorderd, file = "DESeq_treatment.csv")
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+write.csv(rrld, file = "treatment_rlog.csv")  
+rlog <- read.csv("treatment_rlog.csv")
+```
+
+## PCA
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+countData <- read.csv("treatment_rlog.csv", row.names="X")
+colnames(countData)
+Gene_expression <- as.matrix(countData)
+Metadata <- as.data.frame(read.csv("metaData.csv", header = TRUE, row.names = "name"))
+rownames(Metadata)
+colnames(Gene_expression)
+p <- pca(Gene_expression, metadata = Metadata,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+screeplot(p,
+          components = 1:10,)
+
+pdf(file="rlog_PCA_all.pdf",height=7,width=7)
+biplot(p, 
+       lab = NULL,
+       #showLoadings = TRUE,
+       shape = "treatment", shapeLegendTitle = "Treatment",
+       ellipse = TRUE,
+       colby = "species", colLegendTitle = "Species",
+       xlim=c(-60,80), ylim = c(-75,80),
+       title = 'Rlog Gene Expression PCA',
+       legendPosition = 'right')
+dev.off()
+```
+
+## GO Enrichment on DEGs
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DEG_GOEnrichment/BP/")
+Cnat_BP_All <- read.csv("All_enrichment_curated.csv")
+names(Cnat_BP_All)
+Cnat_BP_All <- Cnat_BP_All[,-c(6,7)]
+Cnat_BP_All$GO <- "BP"
+Cnat_BP_All$Species <- "Cnat"
+names(Cnat_BP_All)
+Cnat_BP_All$DEGs <- "1350"
+Cnat_BP_All$DEGs <- as.numeric(Cnat_BP_All$DEGs) 
+Cnat_BP_All$Percent.DEGs <- Cnat_BP_All$nGenes / Cnat_BP_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/DEG_GOEnrichment/BP/")
+Oann_BP_All <- read.csv("All_enrichment_curated.csv")
+names(Oann_BP_All)
+Oann_BP_All <- Oann_BP_All[,-c(6,7)]
+Oann_BP_All$GO <- "BP"
+Oann_BP_All$Species <- "Oann"
+names(Oann_BP_All)
+Oann_BP_All$DEGs <- "229"
+Oann_BP_All$DEGs <- as.numeric(Oann_BP_All$DEGs) 
+Oann_BP_All$Percent.DEGs <- Oann_BP_All$nGenes / Oann_BP_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/pstr/DEG_GOEnrichment/BP/")
+Pstr_BP_All <- read.csv("All_enrichment_curated.csv")
+names(Pstr_BP_All)
+Pstr_BP_All <- Pstr_BP_All[,-c(6,7)]
+Pstr_BP_All$GO <- "BP"
+Pstr_BP_All$Species <- "Pstr"
+names(Pstr_BP_All)
+Pstr_BP_All$DEGs <- "90"
+Pstr_BP_All$DEGs <- as.numeric(Pstr_BP_All$DEGs) 
+Pstr_BP_All$Percent.DEGs <- Pstr_BP_All$nGenes / Pstr_BP_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DEG_GOEnrichment/BP/")
+Past_BP_All <- read.csv("All_enrichment_curated.csv")
+names(Past_BP_All)
+Past_BP_All <- Past_BP_All[,-c(6,7)]
+Past_BP_All$GO <- "BP"
+Past_BP_All$Species <- "Past"
+names(Past_BP_All)
+Past_BP_All$DEGs <- "42"
+Past_BP_All$DEGs <- as.numeric(Past_BP_All$DEGs) 
+Past_BP_All$Percent.DEGs <- Past_BP_All$nGenes / Past_BP_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/DEG_GOEnrichment/BP/")
+Mcav_BP_All <- read.csv("All_enrichment_curated.csv")
+names(Mcav_BP_All)
+Mcav_BP_All <- Mcav_BP_All[,-c(6,7)]
+Mcav_BP_All$GO <- "BP"
+Mcav_BP_All$Species <- "Mcav"
+names(Mcav_BP_All)
+Mcav_BP_All$DEGs <- "385"
+Mcav_BP_All$DEGs <- as.numeric(Mcav_BP_All$DEGs) 
+Mcav_BP_All$Percent.DEGs <- Mcav_BP_All$nGenes / Mcav_BP_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+all_BP <- rbind(Cnat_BP_All,Oann_BP_All,Pstr_BP_All,Past_BP_All,Mcav_BP_All)
+all_BP$Species <- factor(all_BP$Species, levels = c("Cnat","Oann","Pstr","Mcav","Past"))
+names(all_BP)
+
+
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DEG_GOEnrichment/MF/")
+Cnat_MF_All <- read.csv("All_enrichment_curated.csv")
+names(Cnat_MF_All)
+Cnat_MF_All <- Cnat_MF_All[,-c(6,7)]
+Cnat_MF_All$GO <- "MF"
+Cnat_MF_All$Species <- "Cnat"
+names(Cnat_MF_All)
+Cnat_MF_All$DEGs <- "1350"
+Cnat_MF_All$DEGs <- as.numeric(Cnat_MF_All$DEGs) 
+Cnat_MF_All$Percent.DEGs <- Cnat_MF_All$nGenes / Cnat_MF_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/oann/DEG_GOEnrichment/MF/")
+Oann_MF_All <- read.csv("All_enrichment_curated.csv")
+names(Oann_MF_All)
+Oann_MF_All <- Oann_MF_All[,-c(6,7)]
+Oann_MF_All$GO <- "MF"
+Oann_MF_All$Species <- "Oann"
+names(Oann_MF_All)
+Oann_MF_All$DEGs <- "229"
+Oann_MF_All$DEGs <- as.numeric(Oann_MF_All$DEGs) 
+Oann_MF_All$Percent.DEGs <- Oann_MF_All$nGenes / Oann_MF_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/pstr/DEG_GOEnrichment/MF/")
+Pstr_MF_All <- read.csv("All_enrichment_curated.csv")
+names(Pstr_MF_All)
+Pstr_MF_All <- Pstr_MF_All[,-c(6,7)]
+Pstr_MF_All$GO <- "MF"
+Pstr_MF_All$Species <- "Pstr"
+names(Pstr_MF_All)
+Pstr_MF_All$DEGs <- "90"
+Pstr_MF_All$DEGs <- as.numeric(Pstr_MF_All$DEGs) 
+Pstr_MF_All$Percent.DEGs <- Pstr_MF_All$nGenes / Pstr_MF_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/past/DEG_GOEnrichment/MF/")
+Past_MF_All <- read.csv("All_enrichment_curated.csv")
+names(Past_MF_All)
+Past_MF_All <- Past_MF_All[,-c(6,7)]
+Past_MF_All$GO <- "MF"
+Past_MF_All$Species <- "Past"
+names(Past_MF_All)
+Past_MF_All$DEGs <- "42"
+Past_MF_All$DEGs <- as.numeric(Past_MF_All$DEGs) 
+Past_MF_All$Percent.DEGs <- Past_MF_All$nGenes / Past_MF_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/DEG_GOEnrichment/MF/")
+Mcav_MF_All <- read.csv("All_enrichment_curated.csv")
+names(Mcav_MF_All)
+Mcav_MF_All <- Mcav_MF_All[,-c(6,7)]
+Mcav_MF_All$GO <- "MF"
+Mcav_MF_All$Species <- "Mcav"
+names(Mcav_MF_All)
+Mcav_MF_All$DEGs <- "385"
+Mcav_MF_All$DEGs <- as.numeric(Mcav_MF_All$DEGs) 
+Mcav_MF_All$Percent.DEGs <- Mcav_MF_All$nGenes / Mcav_MF_All$DEGs #divide number of genes in pathway by total number of DEGs
+
+all_MF <- rbind(Cnat_MF_All,Oann_MF_All,Pstr_MF_All,Past_MF_All,Mcav_MF_All)
+all_MF$Species <- factor(all_MF$Species, levels = c("Cnat","Oann","Pstr","Mcav","Past"))
+names(all_MF)
+
+cnat_all <- rbind(Cnat_BP_All,Cnat_MF_All)
+oann_all <- rbind(Oann_BP_All,Oann_MF_All)
+past_all <- rbind(Past_BP_All,Past_MF_All)
+pstr_all <- rbind(Pstr_BP_All,Pstr_MF_All)
+mcav_all <- rbind(Mcav_BP_All,Mcav_MF_All)
+
+
+cnat <- 
+  ggplot(data=cnat_all,aes(x=reorder(Pathway,Percent.DEGs),y=Percent.DEGs,fill=Species))+
+   geom_point(aes(color=Species,size=-log(Enrichment.FDR)))+
+   geom_segment(aes(xend=Pathway,yend=0,color=Species),size=0.75)+
+   facet_grid(GO~ ., scales = "free_y")+
+   labs(title = "C.natans")+
+   ylab("Proportion of DEGs")+
+   xlab(NULL)+
+   theme_gray()+
+   scale_size_continuous(limits=c(1,20), breaks = c(5,10,15,20),name="-log padj")+
+   theme(axis.text.y = element_text(angle = 0, size = 4))+
+   #scale_x_discrete(labels = function(x) str_wrap(x,width=70))+
+   coord_flip()+
+   scale_color_manual(values=c("#ff6666"))
+cnat
+
+oann <-ggplot(data=oann_all,aes(x=reorder(Pathway,Percent.DEGs),y=Percent.DEGs,fill=Species))+
+   geom_point(aes(color=Species,size=-log(Enrichment.FDR)))+
+   geom_segment(aes(xend=Pathway,yend=0,color=Species),size=0.75)+
+   facet_grid(GO~ ., scales = "free_y")+
+   labs(title = "O.annularis")+
+   ylab("Proportion of DEGs")+
+   xlab(NULL)+
+   theme_gray()+
+   scale_size_continuous(limits=c(1,20), breaks = c(5,10,15,20),name="-log padj")+
+   theme(axis.text.y = element_text(angle = 0, size = 4))+
+   #scale_x_discrete(labels = function(x) str_wrap(x,width=70))+
+   coord_flip()+
+  scale_color_manual(values=c("#ffc125"))
+oann
+
+past <- ggplot(data=past_all,aes(x=reorder(Pathway,Percent.DEGs),y=Percent.DEGs,fill=Species))+
+   geom_point(aes(color=Species,size=-log(Enrichment.FDR)))+
+   geom_segment(aes(xend=Pathway,yend=0,color=Species),size=0.75)+
+   facet_grid(GO~ ., scales = "free_y")+
+   labs(title = "P.astreoides")+
+   ylab("Proportion of DEGs")+
+   xlab(NULL)+
+   theme_gray()+
+   scale_size_continuous(limits=c(1,20), breaks = c(5,10,15,20),name="-log padj")+
+   theme(axis.text.y = element_text(angle = 0, size = 4))+
+   #scale_x_discrete(labels = function(x) str_wrap(x,width=70))+
+   coord_flip()+
+    scale_color_manual(values=c("#ff66ff"))
+past
+
+pstr <- ggplot(data=pstr_all,aes(x=reorder(Pathway,Percent.DEGs),y=Percent.DEGs,fill=Species))+
+   geom_point(aes(color=Species,size=-log(Enrichment.FDR)))+
+   geom_segment(aes(xend=Pathway,yend=0,color=Species),size=0.75)+
+   facet_grid(GO~ ., scales = "free_y")+
+   labs(title = "P.strigosa")+
+   ylab("Proportion of DEGs")+
+   xlab(NULL)+
+   theme_gray()+
+   scale_size_continuous(limits=c(1,20), breaks = c(5,10,15,20),name="-log padj")+
+   theme(axis.text.y = element_text(angle = 0, size = 4))+
+   #scale_x_discrete(labels = function(x) str_wrap(x,width=70))+
+   coord_flip()+
+   scale_color_manual(values=c("#00cc66"))
+pstr
+
+mcav <- ggplot(data=mcav_all,aes(x=reorder(Pathway,Percent.DEGs),y=Percent.DEGs,fill=Species))+
+   geom_point(aes(color=Species,size=-log(Enrichment.FDR)))+
+   geom_segment(aes(xend=Pathway,yend=0,color=Species),size=0.75)+
+   facet_grid(GO~ ., scales = "free_y")+
+   labs(title = "M.cavernosa")+
+   ylab("Proportion of DEGs")+
+   xlab(NULL)+
+   theme_gray()+
+   scale_size_continuous(limits=c(1,20), breaks = c(5,10,15,20),name="-log padj")+
+   theme(axis.text.y = element_text(angle = 0, size = 4))+
+   #scale_x_discrete(labels = function(x) str_wrap(x,width=70))+
+   coord_flip()+
+   scale_color_manual(values=c("#0099ff"))
+mcav
+
+ggarrange(cnat,
+          oann,
+          pstr,
+          mcav,
+          past,
+          ncol = 1,
+          common.legend = TRUE, legend = "right",
+          align = "hv")
+```
+
+# C. natans Study
+
+### PCA
+```{r}
+# Remove all columns except for "Entry ID" and the counts
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DESeq2/")
+countData <- read.csv("treatment_rlog.csv", row.names="X")
+colnames(countData)
+Gene_expression <- as.matrix(countData)
+Metadata <- as.data.frame(read.csv("./../../../metaData.csv", header = TRUE, row.names = "name"))
+cnatMetadata <- Metadata[Metadata$species == 'cnat',]
+rownames(cnatMetadata)
+colnames(Gene_expression)
+p <- pca(Gene_expression, metadata = cnatMetadata,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+screeplot(p)
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/Symbiont_study/")
+pdf(file="cnat_symbiont_PCA.pdf",height = 8,width = 8)
+  biplot(p,
+       lab = cnatMetadata$sample_number,
+       ntopLoadings = 2,
+       showLoadings = FALSE,
+       sizeLoadingsNames = 2.5,
+       fillBoxedLoadings = alpha("white",1/4),
+       drawConnectorsLoadings = TRUE,
+       lengthLoadingsArrowsFactor = 1.7,
+       colby = "dominant_clade", colkey = c('C'='#41B6C4','D' = '#225EA8'), colLegendTitle = 'Dominant \nClade',
+       shape = "treatment",
+       ellipse = TRUE,
+       #hline = 0, vline = 0,
+       xlim=c(-145,200), ylim = c(-200,215),
+       title = 'Rlog Gene Expression PCA',
+       #showLoadings = TRUE,
+       legendPosition = 'right') 
+dev.off()
+
+
+# Access the variable loadings
+p$loadings[1:nrow(p$loadings),1:3]$PC1
+cnat_loadings <- p$loadings[1:nrow(p$loadings),1:3]
+getwd()
+write.csv(cnat_loadings,file="cnat_symbiont_pca_loadings.csv")
+```
+
+Open "cnat_symbiont_pca_loadings.csv" in Excel
+Copy top 100 Uniprot IDs and search using "ID mapping" at https://www.uniprot.org/id-mapping
+Filter by taxonomy and select "Metazoa"
+Set columns to: Entry   Entry.name    Protein.name    Gene.name 
+Download uncompressed .xlsx file, open, and save as "metazoaLoadings.csv"
+
+
+### Heatmap
+Plot the expression of the top 20 loadings
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/Symbiont_study/")
+loadings <- read.csv("cnat_symbiont_pca_loadings.csv")
+colnames(loadings)[colnames(loadings)=="X"] <- "Entry"
+metazoaLoadings <- read.csv("metazoaLoadings.csv")
+loadingsMaster <- right_join(loadings, metazoaLoadings,by="Entry")
+loadingsMaster <- loadingsMaster[sort(abs(loadingsMaster$PC1),decreasing = T, index.return=T)[[2]],]
+
+loadings <- loadingsMaster[c(1:20),]
+rlogs <- read.csv("./../DESeq2/treatment_rlog.csv")
+colnames(rlogs)[colnames(rlogs)=="X"] <- "Entry"
+master <- left_join(loadings,rlogs,by="Entry")
+master <- tibble::column_to_rownames(master,"Protein.name")
+names(master)
+master <- master[,-c(1:7)]
+
+label <- read.csv("./../../../metaData.csv")
+cnatLabel <- label[label$species == 'cnat',]
+head(cnatLabel)
+names(cnatLabel)
+cnatLabel <- cnatLabel[,c(3,7,8)] #name, LGR, dominant_clade
+cnatLabel <- tibble::column_to_rownames(cnatLabel,"name")
+
+getwd()
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/Symbiont_study/")
+pdf(file="loadingsHeatmap20metazoa.pdf",height=10,width=12)
+pheatmap(master,
+         cluster_cols = TRUE,
+         cluster_rows = TRUE,
+         scale = "none",
+         color = colorRampPalette(c("white","#ffeda0","#fed976","#feb24c","#fd8d3c","#fc4e2a","#e31a1c","#bd0026","#800026"))(200),
+         border_color = "black",
+         annotation_col = cnatLabel,
+         legend = TRUE,
+         legend_labels = cnatLabel,
+         fontsize_row = 6,
+         fontsize_col = 6,
+         cellwidth = 12,
+         cellheight = 8,
+         treeheight_col = 10,
+         treeheight_row = 50
+         )
+dev.off()
+```
