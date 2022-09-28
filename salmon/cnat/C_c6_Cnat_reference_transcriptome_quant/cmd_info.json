@@ -1,0 +1,11 @@
+{
+    "salmon_version": "1.6.0",
+    "index": "Cnat_index",
+    "libType": "A",
+    "mates1": "C_c6_Cnat_reference_transcriptome_1.fq",
+    "mates2": "C_c6_Cnat_reference_transcriptome_2.fq",
+    "threads": "8",
+    "validateMappings": [],
+    "output": "quants/C_c6_Cnat_reference_transcriptome_quant",
+    "auxDir": "aux_info"
+}
