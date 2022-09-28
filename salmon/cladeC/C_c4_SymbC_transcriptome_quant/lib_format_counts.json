@@ -1,0 +1,22 @@
+{
+    "read_files": "[ C_c4_SymbC_transcriptome_1.fq, C_c4_SymbC_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 8116272,
+    "num_assigned_fragments": 8116272,
+    "num_frags_with_concordant_consistent_mappings": 7984808,
+    "num_frags_with_inconsistent_or_orphan_mappings": 136490,
+    "strand_mapping_bias": 0.5013776160929605,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 4003404,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 3981404,
+    "SF": 68562,
+    "SR": 67928,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

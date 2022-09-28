@@ -1,0 +1,45 @@
+[2022-01-25 00:40:42.925] [jointLog] [info] setting maxHashResizeThreads to 8
+[2022-01-25 00:40:42.925] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2022-01-25 00:40:42.925] [jointLog] [info] Usage of --validateMappings implies use of minScoreFraction. Since not explicitly specified, it is being set to 0.65
+[2022-01-25 00:40:42.925] [jointLog] [info] Setting consensusSlack to selective-alignment default of 0.35.
+[2022-01-25 00:40:42.925] [jointLog] [info] parsing read library format
+[2022-01-25 00:40:42.925] [jointLog] [info] There is 1 library.
+[2022-01-25 00:40:42.927] [jointLog] [info] Loading pufferfish index
+[2022-01-25 00:40:42.928] [jointLog] [info] Loading dense pufferfish index.
+[2022-01-25 00:40:43.236] [jointLog] [info] done
+[2022-01-25 00:40:43.262] [jointLog] [info] Index contained 82,273 targets
+[2022-01-25 00:40:43.289] [jointLog] [info] Number of decoys : 0
+[2022-01-25 00:40:43.719] [jointLog] [info] Automatically detected most likely library type as IU
+
+[2022-01-25 00:40:47.066] [fileLog] [info] 
+At end of round 0
+==================
+Observed 1063494 total fragments (1063494 in most recent round)
+
+[2022-01-25 00:40:47.065] [jointLog] [info] Computed 62,624 rich equivalence classes for further processing
+[2022-01-25 00:40:47.065] [jointLog] [info] Counted 933,944 total reads in the equivalence classes 
+[2022-01-25 00:40:47.069] [jointLog] [info] Number of mappings discarded because of alignment score : 281,524
+[2022-01-25 00:40:47.069] [jointLog] [info] Number of fragments entirely discarded because of alignment score : 110,636
+[2022-01-25 00:40:47.069] [jointLog] [info] Number of fragments discarded because they are best-mapped to decoys : 0
+[2022-01-25 00:40:47.069] [jointLog] [info] Number of fragments discarded because they have only dovetail (discordant) mappings to valid targets : 14,633
+[2022-01-25 00:40:47.095] [jointLog] [warning] Only 933944 fragments were mapped, but the number of burn-in fragments was set to 5000000.
+The effective lengths have been computed using the observed mappings.
+
+[2022-01-25 00:40:47.095] [jointLog] [info] Mapping rate = 87.8185%
+
+[2022-01-25 00:40:47.095] [jointLog] [info] finished quantifyLibrary()
+[2022-01-25 00:40:47.148] [jointLog] [info] Starting optimizer
+[2022-01-25 00:40:47.218] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2022-01-25 00:40:47.226] [jointLog] [info] iteration = 0 | max rel diff. = 1105.63
+[2022-01-25 00:40:48.050] [jointLog] [info] iteration = 100 | max rel diff. = 0.850402
+[2022-01-25 00:40:48.868] [jointLog] [info] iteration = 200 | max rel diff. = 0.123786
+[2022-01-25 00:40:49.681] [jointLog] [info] iteration = 300 | max rel diff. = 0.166957
+[2022-01-25 00:40:50.496] [jointLog] [info] iteration = 400 | max rel diff. = 0.167323
+[2022-01-25 00:40:50.919] [jointLog] [info] iteration = 453 | max rel diff. = 0.00978503
+[2022-01-25 00:40:50.932] [jointLog] [info] Finished optimizer
+[2022-01-25 00:40:50.932] [jointLog] [info] writing output 
+
+[2022-01-25 00:40:51.669] [jointLog] [warning] NOTE: Read Lib [[ C_d2_SymbD_transcriptome_1.fq, C_d2_SymbD_transcriptome_2.fq]] :
+
+Detected a *potential* strand bias > 1% in an unstranded protocol check the file: quants/C_d2_SymbD_transcriptome_quant/lib_format_counts.json for details
+

@@ -1,0 +1,22 @@
+{
+    "read_files": "[ M_c6_SymbC_transcriptome_1.fq, M_c6_SymbC_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 10194236,
+    "num_assigned_fragments": 10194236,
+    "num_frags_with_concordant_consistent_mappings": 10005161,
+    "num_frags_with_inconsistent_or_orphan_mappings": 195910,
+    "strand_mapping_bias": 0.49954958246049216,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 4998074,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 5007087,
+    "SF": 98743,
+    "SR": 97167,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

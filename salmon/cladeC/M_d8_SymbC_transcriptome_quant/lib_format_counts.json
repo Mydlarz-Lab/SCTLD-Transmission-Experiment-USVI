@@ -1,0 +1,22 @@
+{
+    "read_files": "[ M_d8_SymbC_transcriptome_1.fq, M_d8_SymbC_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 16158592,
+    "num_assigned_fragments": 16158592,
+    "num_frags_with_concordant_consistent_mappings": 15776652,
+    "num_frags_with_inconsistent_or_orphan_mappings": 397426,
+    "strand_mapping_bias": 0.5024415826627855,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 7926846,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 7849806,
+    "SF": 196267,
+    "SR": 201159,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

@@ -1,0 +1,22 @@
+{
+    "read_files": "[ P_d7_SymbB_transcriptome_1.fq, P_d7_SymbB_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 308649,
+    "num_assigned_fragments": 308649,
+    "num_frags_with_concordant_consistent_mappings": 324399,
+    "num_frags_with_inconsistent_or_orphan_mappings": 8676,
+    "strand_mapping_bias": 0.49754777295860966,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 161404,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 162995,
+    "SF": 4150,
+    "SR": 4526,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

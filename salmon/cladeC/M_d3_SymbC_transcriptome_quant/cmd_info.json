@@ -1,0 +1,11 @@
+{
+    "salmon_version": "1.6.0",
+    "index": "Clade_C_index",
+    "libType": "A",
+    "mates1": "M_d3_SymbC_transcriptome_1.fq",
+    "mates2": "M_d3_SymbC_transcriptome_2.fq",
+    "threads": "8",
+    "validateMappings": [],
+    "output": "quants/M_d3_SymbC_transcriptome_quant",
+    "auxDir": "aux_info"
+}

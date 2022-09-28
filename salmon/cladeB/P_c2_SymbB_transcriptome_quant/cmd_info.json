@@ -1,0 +1,11 @@
+{
+    "salmon_version": "1.6.0",
+    "index": "Clade_B_index",
+    "libType": "A",
+    "mates1": "P_c2_SymbB_transcriptome_1.fq",
+    "mates2": "P_c2_SymbB_transcriptome_2.fq",
+    "threads": "8",
+    "validateMappings": [],
+    "output": "quants/P_c2_SymbB_transcriptome_quant",
+    "auxDir": "aux_info"
+}
