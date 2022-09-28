@@ -1,0 +1,22 @@
+{
+    "read_files": "[ P_d1_Past_reference_transcriptome_1.fq, P_d1_Past_reference_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 15693752,
+    "num_assigned_fragments": 15693752,
+    "num_frags_with_concordant_consistent_mappings": 14808528,
+    "num_frags_with_inconsistent_or_orphan_mappings": 894710,
+    "strand_mapping_bias": 0.49918648227561848,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 7392217,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 7416311,
+    "SF": 450963,
+    "SR": 443747,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
