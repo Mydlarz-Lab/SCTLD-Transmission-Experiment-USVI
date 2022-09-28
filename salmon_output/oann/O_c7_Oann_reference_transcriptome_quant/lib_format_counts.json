@@ -1,0 +1,22 @@
+{
+    "read_files": "[ O_c7_Oann_reference_transcriptome_1.fq, O_c7_Oann_reference_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 6169227,
+    "num_assigned_fragments": 6169227,
+    "num_frags_with_concordant_consistent_mappings": 6452778,
+    "num_frags_with_inconsistent_or_orphan_mappings": 367619,
+    "strand_mapping_bias": 0.5006595608898989,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 3230645,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 3222133,
+    "SF": 177285,
+    "SR": 190334,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
