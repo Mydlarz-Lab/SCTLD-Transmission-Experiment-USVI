@@ -1,0 +1,22 @@
+{
+    "read_files": "[ M_d3_Mcav_reference_transcriptome_1.fq, M_d3_Mcav_reference_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 7001525,
+    "num_assigned_fragments": 7001525,
+    "num_frags_with_concordant_consistent_mappings": 6552753,
+    "num_frags_with_inconsistent_or_orphan_mappings": 483622,
+    "strand_mapping_bias": 0.5004049443035622,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 3279030,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 3273723,
+    "SF": 239504,
+    "SR": 244118,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
