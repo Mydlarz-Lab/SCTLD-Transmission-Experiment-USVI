@@ -1,0 +1,22 @@
+{
+    "read_files": "[ P_c8_Pstr_reference_transcriptome_1.fq, P_c8_Pstr_reference_transcriptome_2.fq]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 14387194,
+    "num_assigned_fragments": 14387194,
+    "num_frags_with_concordant_consistent_mappings": 14182675,
+    "num_frags_with_inconsistent_or_orphan_mappings": 1216001,
+    "strand_mapping_bias": 0.5038990881480397,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 7146637,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 7036038,
+    "SF": 668497,
+    "SR": 547504,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
