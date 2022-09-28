@@ -8,7 +8,8 @@ Any questions, email kelsey.beavers@mavs.uta.edu
   3. EVE_analysis_coral
   4. EVE_analysis_symbiont
   
-  Within each directory, you will find the associated R markdown code, necessary input files, and a README.md file.
+  Within each directory, you will find the associated R markdown code and necessary input files.
+  All other necessary input files are in the salmon directory.
   I hope to make these analyses as clear and reproducible as possible, so if you have any questions, please don't hesitate to ask. 
  
   
