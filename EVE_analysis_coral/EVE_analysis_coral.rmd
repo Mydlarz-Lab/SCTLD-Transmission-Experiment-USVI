@@ -1,1 +1,34 @@
+---
+title: "EVE Analysis - Coral Single-Copy Orthologs"
+author: "Kelsey Beavers"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 
+# Required Packages
+```{r}
+library(dplyr)
+library(tximport)
+library(DESeq2)
+library(readr)
+library(dplyr)
+library(ggrepel)
+library(PCAtools)
+library(tibble)
+library(ggalt)
+library(evemodel) 
+library(ape)
+library(ggsignif)
+library(ggplot2)
+library(tidyverse)
+library(pheatmap)
+library(ggpubr)
+library(cowplot)
+```
+
+# DESeq
+```{r}
+
+```
