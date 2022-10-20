@@ -353,8 +353,17 @@ for FILE in *_1.fq; do
 				-2 ${SAMP}_2.fq \
 				-p 8 --validateMappings -o quants/${SAMP}_quant
 done
-
 ```
 
-
-
+# Orthofinder: Obtaining single-copy orthologs
+[OrthoFinder](https://github.com/davidemms/OrthoFinder) can be used to find single-copy orthologs between a set of protein sequence files (one per species) in FASTA format. We will use this program to identify single-copy orthologs between the five coral species in our study and the four Symbiodiniaceae genera in our study. 
+First we use [TransDecoder](https://github.com/TransDecoder/TransDecoder/wiki) to generate predicted proteomes from our transcriptomes (if not already done during transcriptome assembly). Usage is as follows:
+```{linux, eval=FALSE}
+TransDecoder.LongOrfs -t coral_only_transcriptome.fa
+TransDecoder.Predict -t coral_only_transcriptome.fa
+# Rename the resulting .pep file to end in .fa
+```
+Move all proteomes of interest into the same directory. Then run OrthoFinder as follows:
+```{linux, eval=FALSE}
+python2.7 OrthoFinder-2.5.2/orthofinder.py -f . -t 4
+```
