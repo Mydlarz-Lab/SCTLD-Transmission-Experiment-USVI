@@ -198,6 +198,163 @@ nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon ind
 nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/Symbiont_type_A.fasta -i Clade_A_index -k 23
 ```
 
+## Mapping Reads: Use Salmon for quasi-mapping results 
+[Salmon](https://salmon.readthedocs.io/en/latest/salmon.html#) is a tool built for transcript quantification. It uses two phases; indexing and quantification, to map samples. The second phase: quantification, using quasi-mapping program to map samples to index. Quasi-mapping assumes a generally small file and increased number of repeats in reference sequences. It also takes into account splicing because a transcriptome is assumed to be used for the index. 
+
+```{linux, eval=FALSE}
+#  move fastp filtered files into you salmon directory
+#  since we'll be running the same command on each sample, the simplest way to automate this process is with a simple shell script
+#  the script loops through each sample and invokes salmon using fairly barebone options
+# -i  tells salmon where to find the index
+# -l A tells salmon that it should automatically determine the library type of the sequencing reads (stranded vs. unstranded etc.)
+# -1 and -2 tell salmon where to find the left and right reads for this sample (notice, salmon will accept gzipped FASTQ files directly)
+# -p 8 tells salmon to make use of 8 threads
+# -o specifies the directory where salmon's quantification results should be written
+# working directory: /opt/storage/storage/SCTLD/cnat/salmon
+
+PATH=$PATH:/opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/
+./salmon_loop.sh
+```
+
+salmon_loop.sh file: 
+```{linux, eval=FALSE}
+# Loop for Cnat
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/Cnat_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+# Loop for Mcav
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/Mcav_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+# Loop for Oanu
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+        
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/Oann_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+# Loop for Past
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+        
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/Past_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+# Loop for Pstr
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/Pstr_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+# Loop for Symbiodinium
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/cladeA_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+# Loop for Breviolum
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/cladeB_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+# Loop for Cladocopium
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/cladeC_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+# Loop for Durusdinium
+#!/bin/bash
+PATH=$PATH:/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin
+for FILE in *_1.fq; do
+        echo ${FILE}
+        SAMP=$(basename -s _1.fq $FILE)
+        echo $SAMP
+        DIR=/scratch1/06825/tg861249/salmon_indeces
+
+/scratch1/06825/tg861249/salmon-1.5.2_linux_x86_64/bin/salmon quant -i ${DIR}/cladeD_index -l A \
+				-1 ${SAMP}_1.fq \
+				-2 ${SAMP}_2.fq \
+				-p 8 --validateMappings -o quants/${SAMP}_quant
+done
+
+```
 
 
 
