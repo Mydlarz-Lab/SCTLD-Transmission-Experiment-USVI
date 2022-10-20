@@ -157,6 +157,46 @@ nohup /opt/storage/anaconda3/bin/java -ea -Xmx10g  -cp  /opt/storage/opt_program
 done
 ```
 
+# Salmon: Read Quantification
+[Salmon](https://salmon.readthedocs.io/en/latest/salmon.html#) is a tool built for transcript quantification. It uses two phases; indexing and quantification, to map samples. The first step, indexing, is independent of the reads and requires a reference transcript to build an index. Code for that is as follows: 
+
+## Index Building for Host Transcriptomes 
+For the host indexes, we can keep kmer values at a standard as we are confidant in the transcriptomes we have just built and the quality of the transcriptome. 
+```{linux, eval=FALSE}
+#	working directory: /opt/storage/storage/symbiont_salmon_indices_and_loops/indexes_k23
+# k value dropped from 31 standard to 23 because of quality of fasta index file 
+
+PATH=$PATH:/opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/
+
+# Cnat index 
+nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/coral-host/-i Cnat_index 
+
+# Mcav index 
+nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/coral-host/-i Mcav_index 
+
+# Oanu index 
+nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/coral-host/-i Oanu_index 
+
+# Past index 
+nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/coral-host/-i Cnat_index
+
+```
+
+## Index Building for Symbiont Transcriptomes 
+For the symbiont indexes, we can drop kmer values at a standard in order to get the best quality of reads.  
+```{linux, eval=FALSE}
+#	working directory: /opt/storage/storage/symbiont_salmon_indices_and_loops/indexes_k23
+# k value dropped from 31 standard to 23 because of quality of fasta index file 
+PATH=$PATH:/opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/
+# Durusdinium index
+nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/CladeD_transcriptome.fasta -i Clade_D_index -k 23
+# Cladocopium index
+/opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/davies_cladeC_feb_transcriptome.fasta -i Clade_C_index -k 23
+# Breviolum index
+nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/Symbiont_clade_B_reference.fasta -i Clade_B_index -k 23
+# Symbiodinium index
+nohup /opt/storage/opt_programs/Salmon/salmon-0.12.0_linux_x86_64/bin/salmon index -t ../../transcriptomes/Symbiont_type_A.fasta -i Clade_A_index -k 23
+```
 
 
 
