@@ -28,7 +28,75 @@ library(ggpubr)
 library(cowplot)
 ```
 
-# DESeq
+# TXimport
+## Step 1: Set up 
+This time, instead of using Uniprot IDs as our gene ID in our tx2gene files, we will use the single-copy ortholog ID from OrthoFinder. We will use "Orthogroup_Sequences.csv" from the "Command_Line_Code.Rmd" file to create these new tx2 genes files for each species. 
 ```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/")
+orthogroupSequenceNames <- read.csv("Orthogroup_Sequences.csv",header = TRUE)
+dim(orthogroupSequenceNames)
+#1817 single copy orthologs
+colnames(orthogroupSequenceNames)
 
+cnat <- orthogroupSequenceNames[,c(1,2)]
+names(cnat)
+write.csv(cnat,file="cnat_contig_to_orthogroup.csv")
+
+mcav <- orthogroupSequenceNames[,c(1,3)]
+names(mcav)
+write.csv(mcav,file="mcav_contig_to_orthogroup.csv")
+
+oann <- orthogroupSequenceNames[,c(1,4)]
+names(oann)
+write.csv(oann,file="oann_contig_to_orthogroup.csv")
+
+past <- orthogroupSequenceNames[,c(1,5)]
+names(past)
+write.csv(past,file="past_contig_to_orthogroup.csv")
+
+pstr <- orthogroupSequenceNames[,c(1,6)]
+names(pstr)
+write.csv(pstr,file="pstr_contig_to_orthogroup.csv")
+```
+
+## Step 2: Import read quants from Salmon
+Read in the raw counts from Salmon for ALL coral samples
+```{r}
+# C. natans
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/salmon/")
+Cnat_samples <- read.table("Cnat_samples.csv", header = TRUE)
+Cnat_samples
+Cnat_files <- file.path(Cnat_samples$samples, "quant.sf")
+names(Cnat_files) <- paste0("sample", 1:10)
+all(file.exists(Cnat_files))
+Cnat_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/cnat_contig_to_orthogroup.csv")
+names(Cnat_tx2gene)
+Cnat_tx2gene <- Cnat_tx2gene[,c(3,2)]
+Cnat_tx2gene$cnat_ref_proteome_cdhit <- gsub("\\..*","",Cnat_tx2gene$cnat_ref_proteome_cdhit)
+Cnat_txi <- tximport(Cnat_files, type = 'salmon',tx2gene=Cnat_tx2gene)
+names(Cnat_txi)
+tail(Cnat_txi$counts)
+dim(Cnat_txi$counts)   #1812
+dim(Cnat_tx2gene)  #1817
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Counts/")
+write.csv(Cnat_txi$counts, file = "Cnat_counts.csv")
+
+# M. cavernosa
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/mcav/salmon/")
+Mcav_samples <- read.table("mcav_samples.csv", header = TRUE)
+Mcav_samples
+Mcav_files <- file.path(Mcav_samples$sample, "quant.sf")
+names(Mcav_files) <- paste0("sample", 1:13)
+all(file.exists(Mcav_files))
+Mcav_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/mcav_contig_to_orthogroup.csv")
+names(Mcav_tx2gene)
+Mcav_tx2gene <- Mcav_tx2gene[,c(3,2)]
+Mcav_tx2gene$mcav_ref_proteome_cdhit <- gsub("\\..*","",Mcav_tx2gene$mcav_ref_proteome_cdhit)
+Mcav_txi <- tximport(Mcav_files, type = 'salmon',tx2gene=Mcav_tx2gene)
+names(Mcav_txi)
+tail(Mcav_txi$counts)
+dim(Mcav_txi$counts)   #1803
+dim(Mcav_tx2gene)  #1817
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Counts/")
+write.csv(Mcav_txi$counts, file = "Mcav_counts.csv")
 ```

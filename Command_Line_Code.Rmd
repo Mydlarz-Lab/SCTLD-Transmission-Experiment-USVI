@@ -384,7 +384,7 @@ Orthogroups_SingleCopyOrthologues <- read.csv("Orthogroups_SingleCopyOrthologues
 colnames(Orthogroups_SingleCopyOrthologues) <- c("Orthogroup")
 Orthogroups <- read.table(file = 'Orthogroups.tsv', sep = '\t', header = TRUE)
 Orthogroup_Sequences <- merge(Orthogroups_SingleCopyOrthologues,Orthogroups,by="Orthogroup")
-write.csv(Orthogroup_Sequences, file="Orthogroup_Sequences.csv")
+write.csv(Orthogroup_Sequences, file="Orthogroup_Sequences.csv",quote = FALSE,row.names = FALSE)
 
 # We also grab the sequence names from P. astreoides (the species with highest quality assembly) and will use these for annotation 
 past_orthologs <- Orthogroup_Sequences[c(5)]
