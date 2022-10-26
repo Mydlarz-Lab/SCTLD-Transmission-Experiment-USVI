@@ -99,4 +99,168 @@ dim(Mcav_txi$counts)   #1803
 dim(Mcav_tx2gene)  #1817
 setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Counts/")
 write.csv(Mcav_txi$counts, file = "Mcav_counts.csv")
+
+#O.annularis
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/Oann/salmon/")
+Oann_samples <- read.table("Oann_samples.csv", header = TRUE)
+Oann_samples
+Oann_files <- file.path(Oann_samples$sample, "quant.sf")
+names(Oann_files) <- paste0("sample", 1:11)
+all(file.exists(Oann_files))
+Oann_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/Oann_contig_to_orthogroup.csv")
+names(Oann_tx2gene)
+Oann_tx2gene <- Oann_tx2gene[,c(3,2)]
+Oann_tx2gene$oann_ref_proteome_cdhit <- gsub("\\..*","",Oann_tx2gene$oann_ref_proteome_cdhit)
+Oann_txi <- tximport(Oann_files, type = 'salmon',tx2gene=Oann_tx2gene)
+names(Oann_txi)
+tail(Oann_txi$counts)
+dim(Oann_txi$counts)   #1814
+dim(Oann_tx2gene)  #1817
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Counts/")
+write.csv(Oann_txi$counts, file = "Oann_counts.csv")
+
+# P.astreoides
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/Past/salmon/")
+Past_samples <- read.table("Past_samples.csv", header = TRUE)
+Past_samples
+Past_files <- file.path(Past_samples$sample, "quant.sf")
+names(Past_files) <- paste0("sample", 1:11)
+all(file.exists(Past_files))
+Past_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/Past_contig_to_orthogroup.csv")
+names(Past_tx2gene)
+Past_tx2gene <- Past_tx2gene[,c(3,2)]
+Past_tx2gene$past_ref_proteome_cdhit <- gsub("\\..*","",Past_tx2gene$past_ref_proteome_cdhit)
+Past_txi <- tximport(Past_files, type = 'salmon',tx2gene=Past_tx2gene)
+names(Past_txi)
+tail(Past_txi$counts)
+dim(Past_txi$counts)   #1808
+dim(Past_tx2gene)  #1817
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Counts/")
+write.csv(Past_txi$counts, file = "Past_counts.csv")
+
+#P.strigosa
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/Pstr/salmon/")
+Pstr_samples <- read.table("Pstr_samples.csv", header = TRUE)
+Pstr_samples
+Pstr_files <- file.path(Pstr_samples$sample, "quant.sf")
+names(Pstr_files) <- paste0("sample", 1:7)
+all(file.exists(Pstr_files))
+Pstr_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/Pstr_contig_to_orthogroup.csv")
+names(Pstr_tx2gene)
+Pstr_tx2gene <- Pstr_tx2gene[,c(3,2)]
+Pstr_tx2gene$pstr_ref_proteome_cdhit <- gsub("\\..*","",Pstr_tx2gene$pstr_ref_proteome_cdhit)
+Pstr_txi <- tximport(Pstr_files, type = 'salmon',tx2gene=Pstr_tx2gene)
+names(Pstr_txi)
+tail(Pstr_txi$counts)
+dim(Pstr_txi$counts)   #1804
+dim(Pstr_tx2gene)  #1817
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Counts/")
+write.csv(Pstr_txi$counts, file = "Pstr_counts.csv")
+```
+Now merge the count data
+```{r}
+Cnat <- as.data.frame(Cnat_txi$counts)
+Cnat <- tibble::rownames_to_column(Cnat,"Orthogroup")
+colnames(Cnat) <- c("Orthogroup","cnat_c2","cnat_c3","cnat_c4","cnat_c6","cnat_c8","cnat_d2","cnat_d3","cnat_d4","cnat_d6","cnat_d8")
+
+Mcav <- as.data.frame(Mcav_txi$counts)
+Mcav <- tibble::rownames_to_column(Mcav,"Orthogroup")
+colnames(Mcav) <- c("Orthogroup","mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8")
+
+Oann <- as.data.frame(Oann_txi$counts)
+Oann <- tibble::rownames_to_column(Oann,"Orthogroup")
+colnames(Oann) <- c("Orthogroup","oann_c1","oann_c2","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8")
+
+Past <- as.data.frame(Past_txi$counts)
+Past <- tibble::rownames_to_column(Past,"Orthogroup")
+colnames(Past) <- c("Orthogroup","past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7")
+
+Pstr <- as.data.frame(Pstr_txi$counts)
+Pstr <- tibble::rownames_to_column(Pstr,"Orthogroup")
+colnames(Pstr) <- c("Orthogroup","pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7")
+
+Mcav_Cnat <- inner_join(Mcav,Cnat, by ="Orthogroup")
+Mcav_Cnat_Oann <- inner_join(Mcav_Cnat,Oann,by="Orthogroup")
+Mcav_Cnat_Oann_Past <- inner_join(Mcav_Cnat_Oann,Past,by="Orthogroup")
+all_species <- inner_join(Mcav_Cnat_Oann_Past,Pstr,by="Orthogroup")
+dim(all_species)
+names(all_species)
+# 1781 single-copy orthologs expressed and shared between all 5 species
+```
+
+## Step 3: Annotate the single-copy orthologs
+
+```{r}
+# Merge in the names of the past proteome sequences
+past_ortho_to_contig <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/past_SC_ortholog_sequences.csv")
+View(past_ortho_to_contig)
+past_ortho_to_contig <- past_ortho_to_contig[,-c(1)]
+names(past_ortho_to_contig)[2]<-paste("past_contig")
+
+all_species_contig <- left_join(all_species,past_ortho_to_contig,by="Orthogroup")
+all_species_contig <- all_species_contig %>% relocate(past_contig, .after = Orthogroup)
+dim(all_species_contig)  
+
+# Annotate with Uniprot Entry ID's with "past_sc_orthologs_annotated.txt"
+annot <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Annotation/past_sc_orthologs_annotated.txt",sep="\t", quote="", comment.char="",header=TRUE)
+master <- left_join(all_species_contig,annot,by="past_contig")
+names(master)
+master <- master %>% relocate(Entry, .after = past_contig)
+master <- master %>% relocate(Entry.name, .after = Entry)
+master <- master %>% relocate(Evalue, .after = Entry.name)
+View(master)
+dim(master)  #1781 
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Counts/")
+write.csv(master,file="masterCounts_1.csv")
+```
+
+## DESeq2
+
+Reorganize "masterCounts_1.csv" so that columns name match row names in "metaData.csv"
+Make counts integers.
+Run DESeq2 on Orthogroups to get Rlog normalized counts.
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/")
+library(DESeq2)
+library(dplyr)
+countData <- read.csv("./Counts/masterCounts_1.csv", row.names="Orthogroup")
+colnames(countData)
+countData <- countData[,-c(1:5)]
+colData <- read.csv("metaData.csv",row.names = "name")
+colData
+rownames(colData)
+colnames(countData)
+# Reorganize countData so that columns match row names in colData:
+countData <- countData %>% select(order(colnames(countData)))
+
+# Make counts in countData integers:
+names(countData)
+countData[1:52] <-  round(countData[1:52], digits=0)
+countData <- as.data.frame(countData)
+
+# Set the design
+# Filter out columns with an average number of reads less than 10. 
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = colData, 
+                                        design = ~species + treatment )
+
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+
+```
+
+Run DESeq2
+
+```{r}
+test <- DESeq(dds_treatment)
+res <- results(test)
+res
+resorderd <-res[order(res$padj),] 
+setwd("./DESeq2/")
+write.csv(resorderd, file = "DESeq_treatment_1.csv")
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+dim(rrld)  # 1765 after filtering out low counts
+write.csv(rrld, file = "treatment_rlog_1.csv")  
 ```
