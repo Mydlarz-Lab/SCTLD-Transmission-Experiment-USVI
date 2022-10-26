@@ -215,7 +215,7 @@ setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_fo
 write.csv(master,file="masterCounts_1.csv")
 ```
 
-## DESeq2
+# DESeq2
 
 Reorganize "masterCounts_1.csv" so that columns name match row names in "metaData.csv"
 Make counts integers.
@@ -241,18 +241,14 @@ countData[1:52] <-  round(countData[1:52], digits=0)
 countData <- as.data.frame(countData)
 
 # Set the design
-# Filter out columns with an average number of reads less than 10. 
 dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
                                         colData = colData, 
                                         design = ~species + treatment )
 
+# Filter out columns with an average number of reads less than 10
 dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
 
-```
-
-Run DESeq2
-
-```{r}
+# Run DESeq2
 test <- DESeq(dds_treatment)
 res <- results(test)
 res
@@ -263,4 +259,125 @@ rld <- rlog(dds_treatment, blind=FALSE)
 rrld <- assay(rld)
 dim(rrld)  # 1765 after filtering out low counts
 write.csv(rrld, file = "treatment_rlog_1.csv")  
+```
+
+# EVE
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/DESeq2/")
+exprTbl <- read.csv("treatment_rlog.csv")
+dim(exprTbl)
+colnames(exprTbl)
+colnames(exprTbl)[colnames(exprTbl)=="X"] <- "Ortholog"
+head(exprTbl)
+
+# The table needs to be converted to a matrix:
+exprMat <- as.matrix(exprTbl[,-1])
+rownames(exprMat) <- exprTbl$Ortholog
+exprMat
+dim(exprMat)  #1766  52
+
+# Species phylogeny can be obtained from OrthoFinder output in DIR=/OrthoFinder/Results/Species_Tree/SpeciesTree_rooted.txt
+
+# I find it is best to run OrthoFinder with an outgroup species to get a better species tree. I included a Cassiopea proteome (generated the same way as the other proteomes) as my outgroup to obtain the following rooted species tree:
+# (Cassiopea_proteome:0.405291,(past_reference_proteome:0.207024,((mcav_reference_proteome:0.0938366,oann_reference_proteome:0.0723831)0.262775:0.0844971,(pstr_reference_proteome:0.0954775,cnat_reference_proteome:0.106944)0.514097:0.105377)0.45022:0.114876)1:0.405291); 
+# I then remove the out group from the rooted tree and abbreviate the species names
+speciesTree <-read.tree(text="((past:0.207024,((mcav:0.0938366,oann:0.0723831)0.262775:0.0844971,(pstr:0.0954775,cnat:0.106944)0.514097:0.105377)0.45022:0.114876)1:0.405291);")
+
+# Check validity of species tree
+plot(speciesTree,
+     type = "phylogram",
+     use.edge.length = TRUE,
+     node.pos = NULL,
+     show.tip.label = TRUE,
+     root.edge = TRUE)
+
+# EVE needs to know which species each column in the expression matrix belongs to. This is done by creating a vector of species names corresponding to the tip labels in the species tree
+
+speciesTree$tip.label
+colnames(exprMat)
+colSpecies <- sub("_.*$","",colnames(exprMat))
+colSpecies
+
+# Run EVE
+res <- betaSharedTest(tree = speciesTree, gene.data = exprMat, colSpecies = colSpecies)
+
+# plot likelihood ratio test statistic histogram
+hist(res$LRT,freq = F)
+
+# Plot the chi-squared distribution with one degree of freedom
+x = seq(0.5,10,length.out = 100)
+y = dchisq(x,df = 1)
+lines(x,y,col="red")
+
+# P-value can then be calculated using:
+pval = pchisq(res$LRT,df = 1,lower.tail = F)
+pval
+
+# The shared beta:
+res$sharedBeta
+# [1] 0.3375006
+# [1] 0.3377453
+log(0.3375006)
+# [1] -1.086188
+
+#Combine LRT, beta, theta, sigma2, alpha:
+head(cbind(res$LRT,res$indivBetaRes$par,pval))
+colnames(exprMat)
+dim(exprMat)
+# [1]  1766   52
+a <- cbind(res$LRT,res$indivBetaRes$par,pval,exprMat[,1:52])
+rownames(a) <- exprTbl$Ortholog
+
+# Give Column Name to LRT column
+colnames(a)
+colnames(a)[colnames(a)==""] <- "LRT"
+head(a)
+
+#Export results
+getwd()
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/")
+
+write.csv(a, file="R_EVE_results_SCTLD_5species.csv")
+# Add three columns in excel:
+  # 1: "type" column with formula:
+    # =IF(F2<0.3375006,"Lineage Specific","Highly Variable")    # F2 = "beta" column
+  # 2: "significant column with formula:
+    # =IF(G2<0.05,"Significant","Not Significant")              # G2 = "pval" column
+  # 3: "category" column with formula:
+    # =IF(I2="Significant",H2,"NS")                             # I2 = "significance", H2 = "type"
+
+#Visualize LRT v Beta by volcano plot for gene data
+library(DESeq2)
+library(ggplot2)
+library(dplyr)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/")
+Shared_EVE <- read.csv("R_EVE_results_SCTLD_5species.csv")
+colnames(Shared_EVE)
+head(Shared_EVE)
+Shared_EVE_sig <- Shared_EVE %>% filter(pval <= 0.05)
+write.csv(Shared_EVE_sig, file="Signficant_SCTLD_eve.csv")
+# Make a basic volcano plot
+names(Shared_EVE)
+names(Shared_EVE_sig)
+Shared_EVE_LS <- Shared_EVE_sig %>% filter(log(beta)< (-1.127714))
+dim(Shared_EVE_LS)  #85
+Shared_EVE_HV <- Shared_EVE_sig %>% filter(log(beta)> (-1.127714))
+dim(Shared_EVE_HV)  #216
+216+85  # 301
+getwd()
+pdf(file="EVE_volcanoPlot_orthologs.pdf",height=6,width=6)
+p <- ggplot(data = Shared_EVE,
+       aes(x=log(beta),y=-log(pval),color=category))+
+  geom_point()+
+  scale_color_manual(values=c("#F8766D","#00b9e3","black"))+
+  geom_vline(xintercept = -1.086188, col="black", linetype="dashed")+
+  annotate("text", x = 0.9, y = 9.5, label = "Shared beta", size = 3)+
+  geom_hline(yintercept = -log(0.05), col="black",linetype = "dashed")+
+  annotate("text", x = -4, y = 2.5, label = "p = 0.05", size = 3)+
+  xlim(-5,5)+
+  theme_light()
+p + labs(color = "EVE Gene Category",title = "EVE Genes Volcano Plot",subtitle = "85 Lineage-Specific and 216 Highly Variable Genes") +
+  theme(plot.title = element_text(face = "bold"), plot.subtitle = element_text(size = 9))
+dev.off()
 ```
