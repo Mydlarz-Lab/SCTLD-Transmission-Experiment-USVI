@@ -191,7 +191,7 @@ names(all_species)
 ## Step 3: Annotate the single-copy orthologs
 
 ```{r}
-# Merge in the names of the past proteome sequences
+# Merge in the names of the mcav proteome sequences
 past_ortho_to_contig <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/past_SC_ortholog_sequences.csv")
 View(past_ortho_to_contig)
 past_ortho_to_contig <- past_ortho_to_contig[,-c(1)]
@@ -257,7 +257,7 @@ setwd("./DESeq2/")
 write.csv(resorderd, file = "DESeq_treatment_1.csv")
 rld <- rlog(dds_treatment, blind=FALSE) 
 rrld <- assay(rld)
-dim(rrld)  # 1765 after filtering out low counts
+dim(rrld)  # 1766 after filtering out low counts
 write.csv(rrld, file = "treatment_rlog_1.csv")  
 ```
 
@@ -265,7 +265,7 @@ write.csv(rrld, file = "treatment_rlog_1.csv")
 
 ```{r}
 setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/DESeq2/")
-exprTbl <- read.csv("treatment_rlog.csv")
+exprTbl <- read.csv("treatment_rlog_1.csv")
 dim(exprTbl)
 colnames(exprTbl)
 colnames(exprTbl)[colnames(exprTbl)=="X"] <- "Ortholog"
@@ -316,10 +316,9 @@ pval
 
 # The shared beta:
 res$sharedBeta
-# [1] 0.3375006
 # [1] 0.3377453
-log(0.3375006)
-# [1] -1.086188
+log(0.3377453)
+# [1] -1.085463
 
 #Combine LRT, beta, theta, sigma2, alpha:
 head(cbind(res$LRT,res$indivBetaRes$par,pval))
@@ -336,22 +335,22 @@ head(a)
 
 #Export results
 getwd()
-setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/")
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/new")
 
 write.csv(a, file="R_EVE_results_SCTLD_5species.csv")
 # Add three columns in excel:
-  # 1: "type" column with formula:
+  # 1: "type" column after "pval" with formula:
     # =IF(F2<0.3375006,"Lineage Specific","Highly Variable")    # F2 = "beta" column
-  # 2: "significant column with formula:
+  # 2: "significant" column after "type" with formula:
     # =IF(G2<0.05,"Significant","Not Significant")              # G2 = "pval" column
-  # 3: "category" column with formula:
+  # 3: "category" after "significant" column with formula:
     # =IF(I2="Significant",H2,"NS")                             # I2 = "significance", H2 = "type"
 
 #Visualize LRT v Beta by volcano plot for gene data
 library(DESeq2)
 library(ggplot2)
 library(dplyr)
-setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/")
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/new")
 Shared_EVE <- read.csv("R_EVE_results_SCTLD_5species.csv")
 colnames(Shared_EVE)
 head(Shared_EVE)
@@ -360,9 +359,9 @@ write.csv(Shared_EVE_sig, file="Signficant_SCTLD_eve.csv")
 # Make a basic volcano plot
 names(Shared_EVE)
 names(Shared_EVE_sig)
-Shared_EVE_LS <- Shared_EVE_sig %>% filter(log(beta)< (-1.127714))
+Shared_EVE_LS <- Shared_EVE_sig %>% filter(log(beta)< (-1.085463))
 dim(Shared_EVE_LS)  #85
-Shared_EVE_HV <- Shared_EVE_sig %>% filter(log(beta)> (-1.127714))
+Shared_EVE_HV <- Shared_EVE_sig %>% filter(log(beta)> (-1.085463))
 dim(Shared_EVE_HV)  #216
 216+85  # 301
 getwd()
