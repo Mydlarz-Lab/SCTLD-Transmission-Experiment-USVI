@@ -387,23 +387,24 @@ Orthogroup_Sequences <- merge(Orthogroups_SingleCopyOrthologues,Orthogroups,by="
 write.csv(Orthogroup_Sequences, file="Orthogroup_Sequences.csv",quote = FALSE,row.names = FALSE)
 
 # We also grab the sequence names from P. astreoides (the species with highest quality assembly) and will use these for annotation 
-past_orthologs <- Orthogroup_Sequences[c(5)]
-names(past_orthologs) <- NULL
-write.csv(past_orthologs, file="past_SC_ortholog_sequence_names.txt",quote = FALSE,row.names = FALSE)
+names(Orthogroup_Sequences)
+mcav_orthologs <- Orthogroup_Sequences[c(1,3)]
+names(mcav_orthologs)
+write.csv(mcav_orthologs, file="mcav_SC_ortholog_sequences.csv",quote = FALSE,row.names = FALSE)
 ```
-Make a new directory in "OrthoFinder/" called "Annotating_Orthogroups" and move "past_SC_ortholog_sequences.csv" here along with the P.astreoides proteome from the previous step. We will use [cdbfasta](https://github.com/gpertea/cdbfasta) to pull the single-copy ortholog sequences out of the P.astreoides reference proteome. 
+Make a new directory in "OrthoFinder/" called "Annotating_Orthogroups" and move "mcav_SC_ortholog_sequences.csv" here along with the M.cavernosa proteome from the previous step. We will use [cdbfasta](https://github.com/gpertea/cdbfasta) to pull the single-copy ortholog sequences out of the M.cavernosa reference proteome. 
 ```{linux, eval=FALSE}
 DIR=/opt/storage/storage/SCTLD/host_orthofinder/OrthoFinder/OrthoFinder/Annotating_Orthogroups
 
 # Make an index of the P.astreoides reference proteome
-cdbfasta/cdbfasta past_ref_proteome.fa
+cdbfasta/cdbfasta mcav_ref_proteome.fa
 
-cat past_SC_ortholog_sequence_names.txt | cdbfasta/cdbyank past_ref_proteome.fa.cidx > past_sc_orthologs.fa
+cat mcav_SC_ortholog_sequence_names.txt | cdbfasta/cdbyank mcav_ref_proteome.fa.cidx > mcav_sc_orthologs.fa
 
 # Annotate with BLASTp
-ncbi-blast-2.2.27+/bin/blastp -query past_sc_orthologs.fa -db uniprot_db -outfmt "6 sseqid qseqid evalue" -max_target_seqs 1 -out past_sc_orthologs_annotated.txt
+ncbi-blast-2.2.27+/bin/blastp -query mcav_sc_orthologs.fa -db uniprot_db -outfmt "6 sseqid qseqid evalue" -max_target_seqs 1 -out mcav_sc_orthologs_annotated.txt
 ```
-Save "past_sc_orthologs_annotated.txt" and "past_sc_orthologs.fa" to your computer. We will use these files in our Coral EVE analysis. 
+Save "mcav_sc_orthologs_annotated.txt" and "mcav_sc_orthologs.fa" to your computer. We will use these files in our Coral EVE analysis. 
 This process is analagous in the Symbiodinaiceae genera using the Durusdinium reference proteome as the reference for annotation.
 
 
