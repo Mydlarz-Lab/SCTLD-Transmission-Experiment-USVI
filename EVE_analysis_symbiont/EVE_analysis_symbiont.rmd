@@ -1,1 +1,209 @@
+---
+title: "EVE Analysis - Coral Single-Copy Orthologs"
+author: "Kelsey Beavers"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Required Packages
+```{r}
+library(dplyr)
+library(tximport)
+library(DESeq2)
+library(readr)
+library(dplyr)
+library(ggrepel)
+library(PCAtools)
+library(tibble)
+library(ggalt)
+library(evemodel) 
+library(ape)
+library(ggsignif)
+library(ggplot2)
+library(tidyverse)
+library(pheatmap)
+library(ggpubr)
+library(cowplot)
+library(ggvenn)
+```
+
+# TXimport
+## Step 1: Set up 
+This time, instead of using Uniprot IDs as our gene ID in our tx2gene files, we will use the single-copy ortholog ID from OrthoFinder. We will use "Orthogroup_Sequences.csv" from the "Command_Line_Code.Rmd" file to create these new tx2 genes files for each species. 
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Orthogroups/")
+orthogroupSequenceNames <- read.csv("Orthogroup_Sequences.csv",header = TRUE)
+dim(orthogroupSequenceNames)
+#5338 single copy orthologs
+colnames(orthogroupSequenceNames)
+
+symbA <- orthogroupSequenceNames[,c(1,2)]
+names(symbA)
+write.csv(symbA,file="SymbA_contig_to_orthogroup.csv")
+
+symbB <- orthogroupSequenceNames[,c(1,3)]
+names(symbB)
+write.csv(symbB,file="SymbB_contig_to_orthogroup.csv")
+
+symbC <- orthogroupSequenceNames[,c(1,4)]
+names(symbC)
+write.csv(symbC,file="SymbC_contig_to_orthogroup.csv")
+
+symbD <- orthogroupSequenceNames[,c(1,5)]
+names(symbD)
+write.csv(symbD,file="SymbD_contig_to_orthogroup.csv")
+```
+
+## Step 2: Import read quants from Salmon
+Read in the raw counts from Salmon for ALL symbiont samples
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeA/salmon/")
+cladeA_samples <- read.table("cladeA_samples.csv", header = TRUE)
+cladeA_samples
+cladeA_files <- file.path(cladeA_samples$sample, "quant.sf")
+names(cladeA_files) <- paste0("sample", 1:11)
+all(file.exists(cladeA_files))
+cladeA_tx2gene <- read.csv("~/Documents/OneDrive - University of Texas at Arlington/Kelsey Stuff Temp/SCTLD/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Orthogroups/SymbA_contig_to_orthogroup.csv")
+names(cladeA_tx2gene)
+cladeA_tx2gene <- cladeA_tx2gene[,c(3,2)]
+cladeA_tx2gene$SymbA_proteome_cdhit <- gsub("\\..*","",cladeA_tx2gene$SymbA_proteome_cdhit)
+cladeA_txi <- tximport(cladeA_files, type = 'salmon',tx2gene=cladeA_tx2gene)
+names(cladeA_txi)
+tail(cladeA_txi$counts)
+dim(cladeA_txi$counts)   #5334
+dim(cladeA_tx2gene)  #5338
+setwd("~/Documents/OneDrive - University of Texas at Arlington/Kelsey Stuff Temp/SCTLD/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Counts/")
+write.csv(cladeA_txi$counts, file = "cladeA_counts.csv")
+
+
+# Symbiodinium
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeA/salmon/")
+cladeA_samples <- read.table("cladeA_samples.csv", header = TRUE)
+cladeA_samples
+cladeA_files <- file.path(cladeA_samples$sample, "quant.sf")
+names(cladeA_files) <- paste0("sample", 1:11)
+all(file.exists(cladeA_files))
+cladeA_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Orthogroups/SymbA_contig_to_orthogroup.csv")
+names(cladeA_tx2gene)
+cladeA_tx2gene <- cladeA_tx2gene[,c(3,2)]
+cladeA_tx2gene$SymbA_proteome_cdhit <- gsub("\\..*","",cladeA_tx2gene$SymbA_proteome_cdhit)
+cladeA_txi <- tximport(cladeA_files, type = 'salmon',tx2gene=cladeA_tx2gene)
+names(cladeA_txi)
+tail(cladeA_txi$counts)
+dim(cladeA_txi$counts)   #5334
+dim(cladeA_tx2gene)  #5338
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Counts/")
+write.csv(cladeA_txi$counts, file = "cladeA_counts.csv")
+
+
+# Breviolum
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeB/salmon/")
+cladeB_samples <- read.table("cladeB_samples.csv", header = TRUE)
+view(cladeB_samples)
+cladeB_files <- file.path(cladeB_samples$sample, "quant.sf")
+names(cladeB_files) <- paste0("sample", 1:7)
+all(file.exists(cladeB_files))
+cladeB_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Orthogroups/SymbB_contig_to_orthogroup.csv")
+names(cladeB_tx2gene)
+cladeB_tx2gene <- cladeB_tx2gene[,c(3,2)]
+cladeB_tx2gene$SymbB_proteome_cdhit <- gsub("\\..*","",cladeB_tx2gene$SymbB_proteome_cdhit)
+cladeB_txi <- tximport(cladeB_files, type = 'salmon',tx2gene=cladeB_tx2gene)
+names(cladeB_txi)
+tail(cladeB_txi$counts)
+dim(cladeB_txi$counts)   #5338
+dim(cladeB_tx2gene)  #5338
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Counts/")
+write.csv(cladeB_txi$counts, file = "cladeB_counts.csv")
+
+# Cladocopium
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeC/salmon/")
+cladeC_samples <- read.table("cladeC_samples.csv", header = TRUE)
+view(cladeC_samples)
+cladeC_files <- file.path(cladeC_samples$sample, "quant.sf")
+names(cladeC_files) <- paste0("sample", 1:27)
+all(file.exists(cladeC_files))
+cladeC_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Orthogroups/SymbC_contig_to_orthogroup.csv")
+names(cladeC_tx2gene)
+cladeC_tx2gene <- cladeC_tx2gene[,c(3,2)]
+cladeC_tx2gene$SymbC_proteome_cdhit <- gsub("\\..*","",cladeC_tx2gene$SymbC_proteome_cdhit)
+cladeC_txi <- tximport(cladeC_files, type = 'salmon',tx2gene=cladeC_tx2gene)
+names(cladeC_txi)
+tail(cladeC_txi$counts)
+dim(cladeC_txi$counts)   #5337
+dim(cladeC_tx2gene)  #5338
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Counts/")
+write.csv(cladeC_txi$counts, file = "cladeC_counts.csv")
+
+# Durusdinium
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeD/salmon/")
+cladeD_samples <- read.table("cladeD_samples.csv", header = TRUE)
+view(cladeD_samples)
+cladeD_files <- file.path(cladeD_samples$sample, "quant.sf")
+names(cladeD_files) <- paste0("sample", 1:6)
+all(file.exists(cladeD_files))
+cladeD_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Orthogroups/SymbD_contig_to_orthogroup.csv")
+names(cladeD_tx2gene)
+cladeD_tx2gene <- cladeD_tx2gene[,c(3,2)]
+cladeD_tx2gene$SymbD_proteome_cdhit <- gsub("\\..*","",cladeD_tx2gene$SymbD_proteome_cdhit)
+cladeD_txi <- tximport(cladeD_files, type = 'salmon',tx2gene=cladeD_tx2gene)
+names(cladeD_txi)
+tail(cladeD_txi$counts)
+dim(cladeD_txi$counts)   #5337
+dim(cladeD_tx2gene)  #5338
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Counts/")
+write.csv(cladeD_txi$counts, file = "cladeD_counts.csv")
+```
+Now merge the count data
+```{r}
+SymbA <- as.data.frame(cladeA_txi$counts)
+SymbA <- tibble::rownames_to_column(SymbA,"Orthogroup")
+colnames(SymbA) <- c("Orthogroup","past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7")
+
+SymbB <- as.data.frame(cladeB_txi$counts)
+SymbB <- tibble::rownames_to_column(SymbB,"Orthogroup")
+colnames(SymbB) <- c("Orthogroup","pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7")
+
+SymbC <- as.data.frame(cladeC_txi$counts)
+SymbC <- tibble::rownames_to_column(SymbC,"Orthogroup")
+colnames(SymbC) <- c("Orthogroup","cnat_c3","cnat_c4","cnat_d3","cnat_d4","mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8","oann_c1","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8")
+
+SymbD <- as.data.frame(cladeD_txi$counts)
+SymbD <- tibble::rownames_to_column(SymbD,"Orthogroup")
+colnames(SymbD) <- c("Orthogroup","cnat_c2","cnat_c6","cnat_c8","cnat_d2","cnat_d6","cnat_d8")
+
+A_B <- inner_join(SymbA,SymbB, by ="Orthogroup")
+A_B_C <- inner_join(A_B,SymbC,by="Orthogroup")
+all_genera <- inner_join(A_B_C,SymbD,by="Orthogroup")
+dim(all_genera)
+names(all_genera)
+# 5332 single-copy orthologs expressed and shared between all 5 genera
+```
+
+## Step 3: Annotate the single-copy orthologs
+
+```{r}
+# Merge in the names of the mcav proteome sequences
+SymbD_ortho_to_contig <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Orthogroups/D_SC_ortholog_sequences.csv")
+View(SymbD_ortho_to_contig)
+names(SymbD_ortho_to_contig)[2]<-paste("symbD_contig")
+
+all_genera_contig <- left_join(all_genera,SymbD_ortho_to_contig,by="Orthogroup")
+all_genera_contig <- all_genera_contig %>% relocate(symbD_contig, .after = Orthogroup)
+
+# Annotate with Uniprot Entry ID's with "SymbD_sc_orthologs_annotated.txt"
+annot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Annotation/SymbD_sc_orthologs_annotated.csv")
+names(annot)
+master <- left_join(all_genera_contig,annot,by="symbD_contig")
+names(master)
+master <- master %>% relocate(Entry, .after = symbD_contig)
+master <- master %>% relocate(Entry.name, .after = Entry)
+master <- master %>% relocate(Evalue, .after = Entry.name)
+View(master)
+dim(master)  #5332 
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/all/Orthofinder_cdhit/Counts/new")
+write.csv(master,file="masterCounts.csv")
+```
 
