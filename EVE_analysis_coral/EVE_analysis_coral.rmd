@@ -341,16 +341,13 @@ setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_fo
 write.csv(a, file="R_EVE_results_SCTLD_5species.csv")
 # Add three columns in excel:
   # 1: "type" column after "pval" with formula:
-    # =IF(F2<0.3375006,"Lineage Specific","Highly Variable")    # F2 = "beta" column
+    # =IF(G2<0.3375006,"Lineage Specific","Highly Variable")    # G2 = "beta" column
   # 2: "significant" column after "type" with formula:
-    # =IF(G2<0.05,"Significant","Not Significant")              # G2 = "pval" column
+    # =IF(H2<0.05,"Significant","Not Significant")              # H2 = "pval" column
   # 3: "category" after "significant" column with formula:
-    # =IF(I2="Significant",H2,"NS")                             # I2 = "significance", H2 = "type"
+    # =IF(I2="Significant",I2,"NS")                             # J2 = "significance", I2 = "type"
 
 #Visualize LRT v Beta by volcano plot for gene data
-library(DESeq2)
-library(ggplot2)
-library(dplyr)
 setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/new")
 Shared_EVE <- read.csv("R_EVE_results_SCTLD_5species.csv")
 colnames(Shared_EVE)
@@ -388,6 +385,7 @@ dev.off()
 setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/new")
 sig_EVE <- read.csv("Signficant_SCTLD_eve.csv")
 colnames(sig_EVE)
+sig_EVE <- sig_EVE[-c(1)]
 sig_EVE <- sig_EVE[,c(2,7,8,11)]   #Orthogroup,beta, pval, category
 dim(sig_EVE)   #301 significant EVE genes
 names(sig_EVE)
@@ -881,21 +879,21 @@ names(t_sig_orthologs) <- label$name
 dim(t_sig_orthologs)
 getwd()
 
-past_annot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Annotation/past_sc_orthologs_annotated.csv")
-past_contig <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/past_contig_to_orthogroup.csv")
-past_contig <- past_contig[,-c(1)]
-colnames(past_contig)[colnames(past_contig)=="past_ref_proteome_cdhit"] <- "past_contig"
-past_info <- merge(past_annot,past_contig,by="past_contig")
-names(past_info)
+mcav_annot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Annotation/mcav_sc_orthologs_annotated.csv")
+mcav_contig <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/mcav_contig_to_orthogroup.csv")
+mcav_contig <- mcav_contig[,-c(1)]
+colnames(mcav_contig)[colnames(mcav_contig)=="mcav_ref_proteome_cdhit"] <- "mcav_contig"
+mcav_info <- merge(mcav_annot,mcav_contig,by="mcav_contig")
+names(mcav_info)
 names(t_sig_orthologs)
 t_sig_orthologs <- tibble::rownames_to_column(t_sig_orthologs, "Orthogroup")
 
-results <- left_join(t_sig_orthologs,past_info,by="Orthogroup")
+results <- left_join(t_sig_orthologs,mcav_info,by="Orthogroup")
 dim(results)
 # [1] 78 57
 names(results)
-results <- results %>% relocate(past_contig, .after = Orthogroup)
-results <- results %>% relocate(Entry, .after = past_contig)
+results <- results %>% relocate(mcav_contig, .after = Orthogroup)
+results <- results %>% relocate(Entry, .after = mcav_contig)
 results <- results %>% relocate(Entry.name, .after = Entry)
 results <- results %>% relocate(Evalue, .after = Entry.name)
 
@@ -954,7 +952,6 @@ t_HV_sig_genes_avg <- tibble::rownames_to_column(t_HV_sig_genes_avg, "Orthogroup
 
 t_HV_sig_genes_avg <- tibble::column_to_rownames(t_HV_sig_genes_avg, "Orthogroup")
 
-library(pheatmap)
 getwd()
 setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/new")
 pdf(file = "sig_HV_genes_heatmap.pdf",width = 10,height = 10)
@@ -974,7 +971,7 @@ dev.off()
 
 
 
-
+# Pvalue ≤ 0.01
 HV_genes <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/highlyVariable_rlogs_ortholog.csv")
 dim(HV_genes)
 sig_orthologs <- select(HV_genes,c(name,status,OG0010466,OG0010177,OG0011934,OG0012265,OG0011066,OG0010904,OG0010806,OG0012396,OG0012839,OG0010117,OG0010405,OG0010040,OG0011062,OG0011345,OG0010517,OG0010176,OG0012059,OG0010477,OG0010453,OG0012131,OG0010458,OG0011283,OG0011693,OG0010962,OG0012035,OG0012234,OG0011444,OG0009999,OG0010712,OG0012259,OG0011246))
@@ -1026,12 +1023,12 @@ dev.off()
 results <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/new/sig_HV_ANOVA_annot_goodEval_annot.csv")
 names(results)
 results <- results[,-c(1)]
-dim(results)    # 54 significant Highly Variable EVE genes with good evalue
+dim(results)    # 53 significant Highly Variable EVE genes with good evalue
 names(results)
 
 resorderd <-results[order(results$CvI),] 
 resorderd <- resorderd %>% filter(CvI < (0.05)) 
-dim(resorderd)  #45 significantly different between control and infected
+dim(resorderd)  #44 significantly different between control and infected
 
 resorderd <-results[order(results$CvE),] 
 resorderd <- resorderd %>% filter(CvE < (0.05)) 
@@ -1655,7 +1652,7 @@ dim(EvI)  #18
 
 CvI <-sharedHV[order(sharedHV$CvI),] 
 CvI <- CvI %>% filter(CvI <= 0.05)
-dim(CvI)  #45
+dim(CvI)  #44
 
 CvE <-sharedHV[order(sharedHV$CvE),] 
 CvE <- CvE %>% filter(CvE <= 0.05)
@@ -1706,18 +1703,18 @@ dim(LSavg)  # 85 6
 write.csv(LSavg,file="lineage_species_avg.csv")
 
 
-past_annot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Annotation/past_sc_orthologs_annotated.csv")
-past_contig <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/past_contig_to_orthogroup.csv")
-past_contig <- past_contig[,-c(1)]
-colnames(past_contig)[colnames(past_contig)=="past_ref_proteome_cdhit"] <- "past_contig"
-past_info <- merge(past_annot,past_contig,by="past_contig")
-names(past_info)
+mcav_annot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Annotation/mcav_sc_orthologs_annotated.csv")
+mcav_contig <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/Orthogroups/mcav_contig_to_orthogroup.csv")
+mcav_contig <- mcav_contig[,-c(1)]
+colnames(mcav_contig)[colnames(mcav_contig)=="mcav_ref_proteome_cdhit"] <- "mcav_contig"
+mcav_info <- merge(mcav_annot,mcav_contig,by="mcav_contig")
+names(mcav_info)
 names(LSavg)
 #LSavg <- tibble::rownames_to_column(LSavg, "Orthogroup")
-LSavg <- left_join(LSavg,past_info,by="Orthogroup")
+LSavg <- left_join(LSavg,mcav_info,by="Orthogroup")
 
-LSavg <- LSavg %>% relocate(past_contig, .after = Orthogroup)
-LSavg <- LSavg %>% relocate(Entry, .after = past_contig)
+LSavg <- LSavg %>% relocate(mcav_contig, .after = Orthogroup)
+LSavg <- LSavg %>% relocate(Entry, .after = mcav_contig)
 LSavg <- LSavg %>% relocate(Entry.name, .after = Entry)
 LSavg <- LSavg %>% relocate(Evalue, .after = Entry.name)
 
@@ -1770,8 +1767,8 @@ for (i in 3:length(LS_rlogs)){
 }
 ```
 [1] "Q6NWF4  corr: 0.969015234625614  p-value: 0.00651669430351937"
-[1] "Q8SQ72  corr: 0.884915512995971  p-value: 0.0460485845095573"
-[1] "Q6PDL0  corr: 0.911168059252092  p-value: 0.0313555524128266"
+[1] "Q96LD1  corr: 0.884915512995971  p-value: 0.0460485845095573"
+[1] "Q4R5P6  corr: 0.911168059252092  p-value: 0.0313555524128266"
 
 ##### Scatterplots
 
@@ -1780,17 +1777,17 @@ for (i in 3:length(LS_rlogs)){
 LS_rlogs$Species <- factor(LS_rlogs$Species, levels = c("cnat","oann","pstr","past","mcav"))
 
 
-#Q8SQ72 <- 
-   ggplot(LS_rlogs,aes(x=RelativeRisk, y=Q8SQ72))+
-   geom_point(aes(x=RelativeRisk, y=Q8SQ72, color=Species), position = "identity",size=3.5)+
+#Q96LD1 <- 
+   ggplot(LS_rlogs,aes(x=RelativeRisk, y=Q96LD1))+
+   geom_point(aes(x=RelativeRisk, y=Q96LD1, color=Species), position = "identity",size=3.5)+
    geom_smooth(method=glm, color="black")+
    #geom_text(label=LS_rlogs$species, nudge_y = -0.5)+
-   labs(y="Mean Expression", x = "Relative Risk", title = "Gamma-sarcoglycan")+
+   labs(y="Mean Expression", x = "Relative Risk", title = "Zeta-sarcoglycan")+
    stat_cor(label.x.npc = "left",label.y = 10.1)
 
-#Q6PDL0 <- 
-   ggplot(LS_rlogs,aes(x=RelativeRisk, y=Q6PDL0))+
-   geom_point(aes(x=RelativeRisk, y=Q6PDL0, color=Species), position = "identity",size=3)+
+#Q4R5P6 <- 
+   ggplot(LS_rlogs,aes(x=RelativeRisk, y=Q4R5P6))+
+   geom_point(aes(x=RelativeRisk, y=Q4R5P6, color=Species), position = "identity",size=3)+
    geom_smooth(method=glm, color="black")+
    #geom_text(label=row.names(LS_rlogs), nudge_y = -0.5, size =3 )+
    labs(y="Mean Expression", x = "Relative Risk", title = "Cytoplasmic dynein 1 light intermediate chain 2")+
@@ -1850,18 +1847,14 @@ for (i in 3:length(LS_rlogs)){
 }
 
 ```
-[1] "Q63ZP1  corr: -0.889928346915833  p-value: 0.0431065703379798"
-[1] "Q8VEE0  corr: -0.890625079928523  p-value: 0.0427025637944924"
-[1] "Q8VBV7  corr: -0.910697691560168  p-value: 0.0316026274652564" 
-[1] "Q9D428  corr: -0.895959996497787  p-value: 0.0396495315775774"
-[1] "Q8TBH0  corr: 0.990478243445025  p-value: 0.00111375125995564"
+[1] "Q9D428  corr: -0.895959996179715  p-value: 0.0396495317574438"
+[1] "Q8VEE0  corr: -0.890625079348999  p-value: 0.0427025641300313"
+[1] "Q8TBH0  corr: 0.990478243420906  p-value: 0.00111375126418337"
+[1] "Q63ZP1  corr: -0.889928346436799  p-value: 0.043106570616167"
+[1] "Q8VBV7  corr: -0.910697691281558  p-value: 0.0316026276117893"
 
 ##### Scatterplots
 ```{r}   
-# Plot the genes
-library(ggplot2)
-library(ggpubr)
-library(cowplot)
 LS_rlogs$Species <- factor(LS_rlogs$Species, levels = c("cnat","oann","pstr","past","mcav"))
 
 #Q63ZP1 <- 
@@ -1921,11 +1914,7 @@ dev.off()
 #### Heatmap
 
 ```{r}
-library(tibble)
-library(dplyr)
-library(ggpubr)
-library(pheatmap)
-setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/")
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/Orthofinder_cdhit/EVE/new")
 LSavg <- read.csv("sig_LS_avg_annot_goodEval.csv",row.names = "Entry")
 names(LSavg)
 LSavg <- LSavg[,-c(1:5)]
@@ -1934,15 +1923,13 @@ LSavg <- LSavg %>% relocate(pstr, .after = oann)
 LSavg <- LSavg %>% relocate(past, .after = pstr)
 head(LSavg)
 names(LSavg)
-#write.csv(LSavg,file="LS_species_avg_entry.csv")
-
-
+write.csv(LSavg,file="LS_species_avg_entry.csv")
 
 LSavg <- read.csv("LS_species_avg_entry.csv")
 colnames(LSavg)[colnames(LSavg)=="X"] <- "Entry"
 LSavg <- tibble::column_to_rownames(LSavg, "Entry")
 
-label <- read.csv("./../../EVE/meta_sampleInfo.csv", row.names = "Species")
+label <- read.csv("./../../../EVE/meta_sampleInfo.csv", row.names = "Species")
 label
 label <- label[c("cnat","oann","pstr","past","mcav"),c(2,3)]
 colnames(label)
