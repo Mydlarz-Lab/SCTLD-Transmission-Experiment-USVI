@@ -1,0 +1,1260 @@
+---
+title: "Symbiont EVE Analysis"
+author: "Kelsey Beavers"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    keep_md: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/")
+knitr::opts_chunk$set(dev='ragg_png')
+library(tximport)
+library(ape)
+library(tibble)
+library(reshape2)
+library(DESeq2)
+library(dplyr)
+library(PCAtools)
+library(ggalt)
+library(ggplot2)
+library(lifecycle)
+library(evemodel)
+library(ggvenn)
+library(stringr)
+library(ggpubr)
+library(pheatmap)
+library(utils)
+library(corrplot)
+library(repr) 
+library(data.table)
+library(dplyr)
+library(GOplot)
+```
+
+# TXimport
+## Step 1: Set up 
+
+This time, instead of using Uniprot IDs as our gene ID in our tx2gene files, we will use the single-copy ortholog ID from OrthoFinder. We will use "Orthogroup_Sequences.csv" from the "Command_Line_Code.Rmd" file to create these new tx2 genes files for each species. 
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/all/Orthofinder/")
+
+orthogroupSequenceNames <- read.csv("./all/Orthofinder/Orthogroup_Sequences.csv",header = TRUE)
+
+# 5338 single copy orthologs
+
+SymbA <- orthogroupSequenceNames[,c(1,2)]
+write.csv(SymbA,file="./all/Orthofinder/SymbA_contig_to_orthogroup.csv")
+
+SymbB <- orthogroupSequenceNames[,c(1,3)]
+write.csv(SymbB,file="./all/Orthofinder/SymbB_contig_to_orthogroup.csv")
+
+SymbC <- orthogroupSequenceNames[,c(1,4)]
+write.csv(SymbC,file="./all/Orthofinder/SymbC_contig_to_orthogroup.csv")
+
+SymbD <- orthogroupSequenceNames[,c(1,5)]
+write.csv(SymbD,file="./all/Orthofinder/SymbD_contig_to_orthogroup.csv")
+```
+
+## Step 2: Import read quants from Salmon
+
+Read in the raw counts from Salmon for ALL symbiont samples
+
+### Symbiodinium
+```{r,results='hide',tidy=TRUE}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbA/salmon")
+SymbA_samples <- read.table("cladeA_samples.csv", header = TRUE)
+SymbA_files <- file.path(SymbA_samples$sample, "quant.sf")
+names(SymbA_files) <- paste0("sample", 1:11)
+all(file.exists(SymbA_files))
+# Do not continue if output shows [FALSE]
+SymbA_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/all/Orthofinder/SymbA_contig_to_orthogroup.csv")
+SymbA_tx2gene <- SymbA_tx2gene[,c(3,2)]
+SymbA_tx2gene$SymbA_proteome_cdhit <- gsub("\\..*","",SymbA_tx2gene$SymbA_proteome_cdhit)
+SymbA_txi <- tximport(SymbA_files, type = 'salmon',tx2gene=SymbA_tx2gene)
+dim(SymbA_txi$counts)
+# 5,334 transcripts with evalue ≤ 1.00E-06
+
+SymbA_counts <- SymbA_txi$counts
+SymbA_counts <- as.data.frame(SymbA_counts)
+colnames(SymbA_counts) <- c("past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7")
+SymbA_counts <- tibble::rownames_to_column(SymbA_counts,"Orthogroup")
+SymbA_counts[2:12] <-  round(SymbA_counts[2:12], digits=0)
+SymbA_counts <- as.data.frame(SymbA_counts)
+```
+
+### Breviolum
+```{r,results='hide',tidy=TRUE}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbB/salmon")
+SymbB_samples <- read.table("cladeB_samples.csv", header = TRUE)
+SymbB_files <- file.path(SymbB_samples$sample, "quant.sf")
+names(SymbB_files) <- paste0("sample", 1:7)
+all(file.exists(SymbB_files))
+# Do not continue if output shows [FALSE]
+SymbB_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/all/Orthofinder/SymbB_contig_to_orthogroup.csv")
+SymbB_tx2gene <- SymbB_tx2gene[,c(3,2)]
+SymbB_tx2gene$SymbB_proteome_cdhit <- gsub("\\..*","",SymbB_tx2gene$SymbB_proteome_cdhit)
+SymbB_txi <- tximport(SymbB_files, type = 'salmon',tx2gene=SymbB_tx2gene)
+dim(SymbB_txi$counts)
+# 5,338 transcripts with evalue ≤ 1.00E-06
+
+SymbB_counts <- SymbB_txi$counts
+SymbB_counts <- as.data.frame(SymbB_counts)
+colnames(SymbB_counts) <- c("pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7")
+SymbB_counts <- tibble::rownames_to_column(SymbB_counts,"Orthogroup")
+SymbB_counts[2:8] <-  round(SymbB_counts[2:8], digits=0)
+SymbB_counts <- as.data.frame(SymbB_counts)
+```
+
+### Cladocopium
+```{r,results='hide',tidy=TRUE}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbC/salmon")
+SymbC_samples <- read.table("cladeC_samples_no_outlier.csv", header = TRUE)
+SymbC_files <- file.path(SymbC_samples$sample, "quant.sf")
+names(SymbC_files) <- paste0("sample", 1:27)
+all(file.exists(SymbC_files))
+# Do not continue if output shows [FALSE]
+SymbC_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/all/Orthofinder/SymbC_contig_to_orthogroup.csv")
+SymbC_tx2gene <- SymbC_tx2gene[,c(3,2)]
+SymbC_tx2gene$SymbC_proteome_cdhit <- gsub("\\..*","",SymbC_tx2gene$SymbC_proteome_cdhit)
+SymbC_txi <- tximport(SymbC_files, type = 'salmon',tx2gene=SymbC_tx2gene)
+dim(SymbC_txi$counts)
+# 5,337 transcripts with evalue ≤ 1.00E-06
+
+SymbC_counts <- SymbC_txi$counts
+SymbC_counts <- as.data.frame(SymbC_counts)
+colnames(SymbC_counts) <- c("cnat_c3","cnat_c4","cnat_d3","cnat_d4","mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8","oann_c1","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8")
+SymbC_counts <- tibble::rownames_to_column(SymbC_counts,"Orthogroup")
+SymbC_counts[2:28] <-  round(SymbC_counts[2:28], digits=0)
+SymbC_counts <- as.data.frame(SymbC_counts)
+```
+
+### Durusdinium
+```{r,results='hide',tidy=TRUE}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbD/salmon")
+SymbD_samples <- read.table("cladeD_samples.csv", header = TRUE)
+SymbD_files <- file.path(SymbD_samples$sample, "quant.sf")
+names(SymbD_files) <- paste0("sample", 1:6)
+all(file.exists(SymbD_files))
+# Do not continue if output shows [FALSE]
+SymbD_tx2gene <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/all/Orthofinder/SymbD_contig_to_orthogroup.csv")
+SymbD_tx2gene <- SymbD_tx2gene[,c(3,2)]
+SymbD_tx2gene$SymbD_proteome_cdhit <- gsub("\\..*","",SymbD_tx2gene$SymbD_proteome_cdhit)
+SymbD_txi <- tximport(SymbD_files, type = 'salmon',tx2gene=SymbD_tx2gene)
+dim(SymbD_txi$counts)
+# 5,337 transcripts with evalue ≤ 1.00E-06
+
+SymbD_counts <- SymbD_txi$counts
+SymbD_counts <- as.data.frame(SymbD_counts)
+colnames(SymbD_counts) <- c("cnat_c2","cnat_c6","cnat_c8","cnat_d2","cnat_d6","cnat_d8")
+SymbD_counts <- tibble::rownames_to_column(SymbD_counts,"Orthogroup")
+SymbD_counts[2:7] <-  round(SymbD_counts[2:7], digits=0)
+SymbD_counts <- as.data.frame(SymbD_counts)
+```
+## Step 3: Merge the data
+
+Now merge the count data
+```{r,results='hide',tidy=TRUE}
+A_B <- merge(SymbA_counts,SymbB_counts, by ="Orthogroup")
+A_B_C <- merge(A_B,SymbC_counts,by="Orthogroup")
+all_genera <- merge(A_B_C,SymbD_counts,by="Orthogroup")
+# 5,332 single-copy orthologs expressed and shared between all 5 species
+```
+
+## Step 4: Annotate the single-copy orthologs
+
+We annotate using the names of the mcav proteome sequences
+
+```{r,results='hide',tidy=TRUE}
+# Merge in the names of the Durusdinium proteome sequences
+SymbD_ortho_to_contig <- read.csv("./all/Orthofinder/SymbD_SC_ortholog_sequences.csv")
+names(SymbD_ortho_to_contig)[2]<-paste("SymbD_contig")
+
+all_genera_contig <- left_join(all_genera,SymbD_ortho_to_contig,by="Orthogroup")
+all_genera_contig <- all_genera_contig %>% relocate(SymbD_contig, .after = Orthogroup)
+
+# Annotate with Uniprot Entry ID's with "SymbD_sc_orthologs_annotated.csv"
+annot <- read.csv("./all/Orthofinder/SymbD_sc_orthologs_annotated.csv")
+master <- left_join(all_genera_contig,annot,by="SymbD_contig")
+master <- master %>% relocate(Entry, .after = SymbD_contig)
+master <- master %>% relocate(Entry.name, .after = Entry)
+master <- master %>% relocate(Evalue, .after = Entry.name)
+write.csv(master,file="./all/masterCounts.csv",row.names = FALSE)
+```
+
+# DESeq2
+
+Make counts integers.
+Run DESeq2 on Orthogroups to get Rlog normalized counts.
+
+```{r,results='hide',tidy=TRUE}
+countData <- read.csv("./all/masterCounts.csv", row.names="Orthogroup")
+countData <- countData[,-c(1:4)]
+colData <- read.csv("./all/metaData.csv",row.names = "name")
+# Remove oann_c2 and pstr_d8
+colData <- colData[-c(25,53),]
+
+# Reorganize countData so that columns match row names in colData:
+countData <- countData %>% select(order(colnames(countData)))
+
+# Make counts in countData integers:
+countData[1:51] <-  round(countData[1:51], digits=0)
+countData <- as.data.frame(countData)
+
+# Set the design
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = colData, 
+                                        design = ~species + treatment )
+
+# Filter out columns with an average number of reads less than 10
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+
+# Run DESeq2
+test <- DESeq(dds_treatment)
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+# 5,125 after filtering out low counts
+write.csv(rrld, file = "./all/DESeq2/treatment_rlog.csv")  
+```
+
+## EVE
+
+```{r,tidy=TRUE}
+exprTbl <- read.csv("./all/DESeq2/treatment_rlog.csv")
+colnames(exprTbl)[colnames(exprTbl)=="X"] <- "Ortholog"
+exprTbl_ordered <- exprTbl[c("Ortholog","past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7","pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7","cnat_c3","cnat_c4","cnat_d3","cnat_d4","mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8","oann_c1","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8","cnat_c2","cnat_c6","cnat_c8","cnat_d2","cnat_d6","cnat_d8")]
+colnames(exprTbl_ordered) <- c("Ortholog","SymbA_1","SymbA_2","SymbA_3","SymbA_4","SymbA_5","SymbA_6","SymbA_7","SymbA_8","SymbA_9","SymbA_10","SymbA_11","SymbB_1","SymbB_2","SymbB_3","SymbB_4","SymbB_5","SymbB_6","SymbB_7","SymbC_1","SymbC_2","SymbC_3","SymbC_4","SymbC_5","SymbC_6","SymbC_7","SymbC_8","SymbC_9","SymbC_10","SymbC_11","SymbC_12","SymbC_13","SymbC_14","SymbC_15","SymbC_16","SymbC_17","SymbC_18","SymbC_19","SymbC_20","SymbC_21","SymbC_22","SymbC_23","SymbC_24","SymbC_25","SymbC_26","SymbC_27","SymbD_1","SymbD_2","SymbD_3","SymbD_4","SymbD_5","SymbD_6")
+
+# The table needs to be converted to a matrix:
+exprMat <- as.matrix(exprTbl_ordered[,-1])
+rownames(exprMat) <- exprTbl_ordered$Ortholog
+exprMat
+dim(exprMat)  
+#Should return 5125 x 51
+```
+
+```{r EVE_phyloTree,fig.align='center',fig.height=3,fig.width=3,dpi=100}
+# Species phylogeny can be obtained from OrthoFinder output in DIR=/OrthoFinder/Results/Species_Tree/SpeciesTree_rooted.txt
+
+# I then remove the out group from the rooted tree and abbreviate the species names
+speciesTree <-read.tree(text="(SymbA:0.232387,(SymbB:0.103757,(SymbD:0.103539,SymbC:0.0429384)0.383593:0.10611)0.706419:0.2124);")
+
+# Check validity of species tree
+plot(speciesTree,
+     type = "phylogram",
+     use.edge.length = TRUE,
+     node.pos = NULL,
+     show.tip.label = TRUE,
+     root.edge = TRUE)
+```
+
+EVE needs to know which species each column in the expression matrix belongs to. This is done by creating a vector of species names corresponding to the tip labels in the species tree
+
+```{r,results='hide',tidy=TRUE}
+speciesTree$tip.label
+colnames(exprMat)
+colSpecies <- sub("_.*$","",colnames(exprMat))
+colSpecies
+
+# Run EVE
+res <- betaSharedTest(tree = speciesTree, gene.data = exprMat, colSpecies = colSpecies)
+```
+
+
+```{r,results='hide',tidy=TRUE}
+# P-value can then be calculated using:
+pval = pchisq(res$LRT,df = 1,lower.tail = F)
+
+# The shared beta:
+res$sharedBeta
+# [1] 0.1203941
+log(0.1203941)
+# [1] -2.116985
+
+#Combine LRT, beta, theta, sigma2, alpha:
+head(cbind(res$LRT,res$indivBetaRes$par,pval))
+colnames(exprMat)
+dim(exprMat)
+# [1]  5125   51
+a <- cbind(res$LRT,res$indivBetaRes$par,pval,exprMat[,1:51])
+rownames(a) <- exprTbl$Ortholog
+
+# Give Column Name to LRT column
+colnames(a)
+colnames(a)[colnames(a)==""] <- "LRT"
+head(a)
+EVE_results <- as.data.frame(a)
+EVE_results <- tibble::rownames_to_column(EVE_results, "Orthogroup")
+
+EVE_results$type <- ifelse(EVE_results$beta<0.1203941,"Lineage Specific","Highly Variable")
+EVE_results$significant <- ifelse(EVE_results$pval<=0.05,"Significant","Not Significant")
+EVE_results$category <- ifelse(EVE_results$significant == "Significant",EVE_results$type,"NS")
+colnames(EVE_results)
+EVE_results <- EVE_results %>% relocate(type, .after = pval)
+EVE_results <- EVE_results %>% relocate(significant, .after = type)
+EVE_results <- EVE_results %>% relocate(category, .after = significant)
+
+write.csv(EVE_results, file="./all/EVE/R_EVE_results_SCTLD_4genera.csv",row.names = FALSE)
+
+#Visualize LRT v Beta by volcano plot for gene data
+Shared_EVE <- read.csv("./all/EVE/R_EVE_results_SCTLD_4genera.csv")
+Shared_EVE_sig <- Shared_EVE %>% filter(pval <= 0.05)
+write.csv(Shared_EVE_sig, file="./all/EVE/Signficant_SCTLD_eve.csv")
+# Make a basic volcano plot
+Shared_EVE_LS <- Shared_EVE_sig %>% filter(log(beta)< (-2.116985))
+dim(Shared_EVE_LS)  #292
+Shared_EVE_HV <- Shared_EVE_sig %>% filter(log(beta)> (-2.116985))
+dim(Shared_EVE_HV)  #1212
+292+1212  # 1504
+```
+
+```{r EVE_volcano,fig.height=4,fig.width=4,dpi=200}
+p <- ggplot(data = Shared_EVE,
+       aes(x=log(beta),y=-log(pval),color=category))+
+  geom_point()+
+  scale_color_manual(values=c("#f37225","#00b9e3","black"))+
+  geom_vline(xintercept = -2.116985, col="black", linetype="dashed")+
+  annotate("text", x = 0.9, y = 9.5, label = "Shared beta", size = 3)+
+  geom_hline(yintercept = -log(0.05), col="black",linetype = "dashed")+
+  annotate("text", x = -4, y = 2.5, label = "p = 0.05", size = 3)+
+  xlim(-5,5)+
+  theme_light()
+p + labs(color = "EVE Gene Category",title = "EVE Genes Volcano Plot",subtitle = "292 Lineage-Specific and 1212 Highly Variable Genes") +
+  theme(plot.title = element_text(face = "bold"), plot.subtitle = element_text(size = 9))
+```
+
+## Highly Variable Genes
+
+```{r,results='hide',tidy=TRUE}
+sig_EVE <- read.csv("./all/EVE/Signficant_SCTLD_eve.csv")
+colnames(sig_EVE)
+sig_EVE <- sig_EVE[,c(2,7,8,11)]   #Orthogroup,beta, pval, category
+dim(sig_EVE)   #301 significant EVE genes
+names(sig_EVE)
+rlogs <- read.csv("./all/DESeq2/treatment_rlog.csv")
+names(rlogs)
+colnames(rlogs)[1] <- "Orthogroup"
+sig_EVE_rlogs <- left_join(sig_EVE,rlogs,by="Orthogroup")    #301
+names(sig_EVE_rlogs)
+write.csv(sig_EVE_rlogs,file="./all/EVE/sig_EVE_rlogs.csv")
+
+plasticGenes <- subset(sig_EVE_rlogs, sig_EVE$category == "Highly Variable")
+names(plasticGenes)
+plasticGenes <- plasticGenes[,-c(2:4)]
+dim(plasticGenes)
+# [1] 1212  52
+names(plasticGenes)
+t_plasticGenes <- setNames(data.frame(t(plasticGenes[,-1])), plasticGenes[,1])
+row.names(t_plasticGenes)
+t_plasticGenes <- tibble::rownames_to_column(t_plasticGenes, "name")
+
+label <- read.csv("./all/metaData.csv")
+colnames(label)
+label <- label[-c(25,53),c(3,4,5,7,8)] # remove oann_c2 and pstr_d8; keep name,treatment,status,LGR,dominant_clade
+master <- merge(label,t_plasticGenes,by="name")
+master
+dim(master)
+# [1]  51 1217
+getwd()
+write.csv(master,file="./all/EVE/highlyVariable_rlogs_ortholog.csv")
+```
+
+### ANOVA
+
+```{r,results='hide',tidy=TRUE}
+results <- read.csv("./all/EVE/highlyVariable_rlogs_ortholog.csv")
+results <- results[,c(4,7:ncol(results))]
+dim(results)
+# 51 1213
+
+# ANOVA loop significant results
+for(i in 2:ncol(results))
+{
+  column <- names(results[i])
+  #tidy will summarize and return neat format
+  avz <- broom::tidy(aov(results[,i] ~ status, data = results))
+  
+  # Add this condition if you only want aov with P < 0.05
+  if(avz$p.value[1] < 0.05) {
+    
+    print(column)
+  }
+}
+```
+[1] "OG0014635"
+```{r}
+OG0014635 <- aov(results$OG0014635 ~ results$status, data = results)
+summary(OG0014635) 
+TukeyHSD(OG0014635) # Significant between exposed and disease; healthy and exposed
+```
+[2] "OG0014711"
+```{r}
+OG0014711 <- aov(results$OG0014711 ~ results$status, data = results)
+summary(OG0014711) 
+TukeyHSD(OG0014711) # Significant between exposed and disease; healthy and exposed
+```
+[3] "OG0014934"
+```{r}
+OG0014934 <- aov(results$OG0014934 ~ results$status, data = results)
+summary(OG0014934) 
+TukeyHSD(OG0014934) # Significant between healthy and exposed
+```
+[4] "OG0015357"
+```{r}
+OG0015357 <- aov(results$OG0015357 ~ results$status, data = results)
+summary(OG0015357) 
+TukeyHSD(OG0015357) # Significant between exposed and disease, healthy and exposed
+```
+[5] "OG0015448"
+```{r}
+OG0015448 <- aov(results$OG0015448 ~ results$status, data = results)
+summary(OG0015448) 
+TukeyHSD(OG0015448) # Significant between healthy and exposed
+```
+[6] "OG0015496"
+```{r}
+OG0015496 <- aov(results$OG0015496 ~ results$status, data = results)
+summary(OG0015496) 
+TukeyHSD(OG0015496) # Significant between exposed and disease
+```
+[7] "OG0015587"
+```{r}
+OG0015587 <- aov(results$OG0015587 ~ results$status, data = results)
+summary(OG0015587) 
+TukeyHSD(OG0015587) # Significant between healthy and disease
+```
+[8] "OG0016059"
+```{r}
+OG0016059 <- aov(results$OG0016059 ~ results$status, data = results)
+summary(OG0016059) 
+TukeyHSD(OG0016059) # Significant between healthy and exposed
+```
+[9] "OG0016112"
+```{r}
+OG0016112 <- aov(results$OG0016112 ~ results$status, data = results)
+summary(OG0016112) 
+TukeyHSD(OG0016112) # Significant between exposed and disease
+```
+[10] "OG0016166"
+```{r}
+OG0016166 <- aov(results$OG0016166 ~ results$status, data = results)
+summary(OG0016166) 
+TukeyHSD(OG0016166) # Significant between exposed and disease; healthy and exposed
+```
+[11] "OG0016195"
+```{r}
+OG0016195 <- aov(results$OG0016195 ~ results$status, data = results)
+summary(OG0016195) 
+TukeyHSD(OG0016195) # Significant between healthy and exposed
+```
+[12] "OG0016231"
+```{r}
+OG0016231 <- aov(results$OG0016231 ~ results$status, data = results)
+summary(OG0016231) 
+TukeyHSD(OG0016231) # Significant between exposed and disease
+```
+[13] "OG0016351"
+```{r}
+OG0016351 <- aov(results$OG0016351 ~ results$status, data = results)
+summary(OG0016351) 
+TukeyHSD(OG0016351) # Significant between healthy and exposed
+```
+[14] "OG0016465"
+```{r}
+OG0016465 <- aov(results$OG0016465 ~ results$status, data = results)
+summary(OG0016465) 
+TukeyHSD(OG0016465) # Significant between exposed and disease; healthy and exposed
+```
+[15] "OG0016519"
+```{r}
+OG0016519 <- aov(results$OG0016519 ~ results$status, data = results)
+summary(OG0016519) 
+TukeyHSD(OG0016519) # Significant between healthy and exposed
+```
+[16] "OG0016592"
+```{r}
+OG0016592 <- aov(results$OG0016592 ~ results$status, data = results)
+summary(OG0016592) 
+TukeyHSD(OG0016592) # Significant between exposed and disease; healthy and exposed
+```
+[17] "OG0016598"
+```{r}
+OG0016598 <- aov(results$OG0016598 ~ results$status, data = results)
+summary(OG0016598) 
+TukeyHSD(OG0016598) # Significant between healthy and exposed
+```
+[18] "OG0016714"
+```{r}
+OG0016714 <- aov(results$OG0016714 ~ results$status, data = results)
+summary(OG0016714) 
+TukeyHSD(OG0016714) # Significant between exposed and disease; healthy and exposed
+```
+[19] "OG0016752"
+```{r}
+OG0016752 <- aov(results$OG0016752 ~ results$status, data = results)
+summary(OG0016752) 
+TukeyHSD(OG0016752) # Significant between exposed and disease
+```
+[20] "OG0016772"
+```{r}
+OG0016772 <- aov(results$OG0016772 ~ results$status, data = results)
+summary(OG0016772) 
+TukeyHSD(OG0016772) # Significant between exposed and disease; healthy and exposed 
+```
+[21] "OG0016946"
+```{r}
+OG0016946 <- aov(results$OG0016946 ~ results$status, data = results)
+summary(OG0016946) 
+TukeyHSD(OG0016946) # Significant between exposed and disease
+```
+[22] "OG0016950"
+```{r}
+OG0016950 <- aov(results$OG0016950 ~ results$status, data = results)
+summary(OG0016950) 
+TukeyHSD(OG0016950) # Significant between healthy and exposed
+```
+[23] "OG0016983"
+```{r}
+OG0016983 <- aov(results$OG0016983 ~ results$status, data = results)
+summary(OG0016983) 
+TukeyHSD(OG0016983) # Significant between healthy and exposed
+```
+[24] "OG0017040"
+```{r}
+OG0017040 <- aov(results$OG0017040 ~ results$status, data = results)
+summary(OG0017040) 
+TukeyHSD(OG0017040) # Significant between exposed and disease
+```
+[25] "OG0017047"
+```{r}
+OG0017047 <- aov(results$OG0017047 ~ results$status, data = results)
+summary(OG0017047) 
+TukeyHSD(OG0017047) # Significant between exposed and disease; healthy and exposed
+```
+[26] "OG0017064"
+```{r}
+OG0017064 <- aov(results$OG0017064 ~ results$status, data = results)
+summary(OG0017064) 
+TukeyHSD(OG0017064) # Significant between exposed and disease; healthy and exposed
+```
+[27] "OG0017358"
+```{r}
+OG0017358 <- aov(results$OG0017358 ~ results$status, data = results)
+summary(OG0017358) 
+TukeyHSD(OG0017358) # Significant between healthy and disease
+```
+[28] "OG0017367"
+```{r}
+OG0017367 <- aov(results$OG0017367 ~ results$status, data = results)
+summary(OG0017367) 
+TukeyHSD(OG0017367) # Significant between exposed and disease; healthy and exposed
+```
+[29] "OG0017374"
+```{r}
+OG0017367 <- aov(results$OG0017367 ~ results$status, data = results)
+summary(OG0017367) 
+TukeyHSD(OG0017367) # Significant between exposed and disease; healthy and exposed
+```
+[30] "OG0017734"
+```{r}
+OG0017734 <- aov(results$OG0017734 ~ results$status, data = results)
+summary(OG0017734) 
+TukeyHSD(OG0017734) # Significant between healthy and exposed
+```
+[-] "OG0017815"
+```{r}
+OG0017815 <- aov(results$OG0017815 ~ results$status, data = results)
+summary(OG0017815) 
+TukeyHSD(OG0017815) # NOT SIGNIFICANT
+```
+[31] "OG0017941"
+```{r}
+OG0017941 <- aov(results$OG0017941 ~ results$status, data = results)
+summary(OG0017941) 
+TukeyHSD(OG0017941) # significant between exposed and disease; healthy and exposed
+```
+[32] "OG0017993"
+```{r}
+OG0017993 <- aov(results$OG0017993 ~ results$status, data = results)
+summary(OG0017993) 
+TukeyHSD(OG0017993) # significant between exposed and disease; healthy and exposed
+```
+[33] "OG0018097"
+```{r}
+OG0018097 <- aov(results$OG0018097 ~ results$status, data = results)
+summary(OG0018097) 
+TukeyHSD(OG0018097) # significant between exposed and disease
+```
+[34] "OG0018307"
+```{r}
+OG0018307 <- aov(results$OG0018307 ~ results$status, data = results)
+summary(OG0018307) 
+TukeyHSD(OG0018307) # significant between exposed and disease; healthy and exposed
+```
+[35] "OG0018318"
+```{r}
+OG0018318 <- aov(results$OG0018318 ~ results$status, data = results)
+summary(OG0018318) 
+TukeyHSD(OG0018318) # significant between healthy and disease
+```
+[36] "OG0018407"
+```{r}
+OG0018407 <- aov(results$OG0018407 ~ results$status, data = results)
+summary(OG0018407) 
+TukeyHSD(OG0018407) # significant between healthy and exposed
+```
+[37] "OG0018454"
+```{r}
+OG0018454 <- aov(results$OG0018454 ~ results$status, data = results)
+summary(OG0018454) 
+TukeyHSD(OG0018454) # significant between exposed and disease
+```
+[38] "OG0018654"
+```{r}
+OG0018654 <- aov(results$OG0018654 ~ results$status, data = results)
+summary(OG0018654) 
+TukeyHSD(OG0018654) # significant between healthy and exposed
+```
+[39] "OG0018746"
+```{r}
+OG0018746 <- aov(results$OG0018746 ~ results$status, data = results)
+summary(OG0018746) 
+TukeyHSD(OG0018746) # significant between healthy and exposed
+```
+[40] "OG0019097"
+```{r}
+OG0019097 <- aov(results$OG0019097 ~ results$status, data = results)
+summary(OG0019097) 
+TukeyHSD(OG0019097) # significant between exposed and disease; healthy and exposed
+```
+[41] "OG0019398"
+```{r}
+OG0019398 <- aov(results$OG0019398 ~ results$status, data = results)
+summary(OG0019398) 
+TukeyHSD(OG0019398) # significant between healthy and exposed
+```
+[42] "OG0019527"
+```{r}
+OG0019527 <- aov(results$OG0019527 ~ results$status, data = results)
+summary(OG0019527) 
+TukeyHSD(OG0019527) # significant between healthy and exposed
+```
+[43] "OG0019823"
+```{r}
+OG0019823 <- aov(results$OG0019823 ~ results$status, data = results)
+summary(OG0019823) 
+TukeyHSD(OG0019823) # significant between exposed and disease; healthy and exposed
+```
+[-] "OG0019920"
+```{r}
+OG0019920 <- aov(results$OG0019920 ~ results$status, data = results)
+summary(OG0019920) 
+TukeyHSD(OG0019920) # NOT SIGNIFICANT
+```
+[44] "OG0020145"
+```{r}
+OG0020145 <- aov(results$OG0020145 ~ results$status, data = results)
+summary(OG0020145) 
+TukeyHSD(OG0020145) # significant between exposed and disease
+```
+[45] "OG0020152"
+```{r}
+OG0020152 <- aov(results$OG0020152 ~ results$status, data = results)
+summary(OG0020152) 
+TukeyHSD(OG0020152) # significant between healthy and disease
+```
+[46] "OG0020160"
+```{r}
+OG0020160 <- aov(results$OG0020160 ~ results$status, data = results)
+summary(OG0020160) 
+TukeyHSD(OG0020160) # significant between exposed and disease
+```
+[47] "OG0020669"
+```{r}
+OG0020669 <- aov(results$OG0020669 ~ results$status, data = results)
+summary(OG0020669) 
+TukeyHSD(OG0020669) # significant between exposed and disease
+```
+[48] "OG0020785"
+```{r}
+OG0020785 <- aov(results$OG0020785 ~ results$status, data = results)
+summary(OG0020785) 
+TukeyHSD(OG0020785) # significant between exposed and disease
+```
+
+#### Significant 
+
+Make a dataframe including only the 78 significant highly variable orthologs
+
+```{r,results='hide',tidy=TRUE}
+names(results)
+sig_orthologs <- select(results,c(OG0014635,OG0014711,OG0014934,OG0015357,OG0015448,OG0015496,OG0015587,OG0016059,OG0016112,OG0016166,OG0016195,OG0016231,OG0016351,OG0016465,OG0016519,OG0016592,OG0016598,OG0016714,OG0016752,OG0016772,OG0016946,OG0016950,OG0016983,OG0017040,OG0017047,OG0017064,OG0017358,OG0017367,OG0017374,OG0017734,OG0017941,OG0017993,OG0018097,OG0018307,OG0018318,OG0018407,OG0018454,OG0018654,OG0018746,OG0019097,OG0019398,OG0019527,OG0019823,OG0020145,OG0020152,OG0020160,OG0020669,OG0020785))
+
+write.csv(sig_orthologs,file="./all/EVE/sig_HV_orthologs.csv")
+
+dim(sig_orthologs)
+t_sig_orthologs <- as.data.frame(t(sig_orthologs))
+label <- read.csv("./all/metaData.csv")
+names(label)
+label <- label[-c(25,53),] # remove oann_c2 and pstr_d8
+names(t_sig_orthologs) <- label$name
+dim(t_sig_orthologs)
+
+symbD_annot <- read.csv("./all/Orthofinder/SymbD_sc_orthologs_annotated.csv")
+symbD_contig <- read.csv("./all/Orthofinder/SymbD_contig_to_orthogroup.csv")
+symbD_contig <- symbD_contig[,-c(1)]
+colnames(symbD_contig)[colnames(symbD_contig)=="SymbD_proteome_cdhit"] <- "SymbD_contig"
+symbD_info <- merge(symbD_annot,symbD_contig,by="SymbD_contig")
+names(symbD_info)
+names(t_sig_orthologs)
+t_sig_orthologs <- tibble::rownames_to_column(t_sig_orthologs, "Orthogroup")
+
+results <- left_join(t_sig_orthologs,symbD_info,by="Orthogroup")
+dim(results)
+# [1] 48 56
+# 48 HV genes significantly differentially expressed between disease states
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+annot <- left_join(results,uniprot,by="Entry")
+colnames(annot)
+annot <- annot[,-c(57)]
+colnames(annot)[55] <- "Entry.name"
+annot <- annot %>% relocate(SymbD_contig, .after = Orthogroup)
+annot <- annot %>% relocate(Entry, .after = SymbD_contig)
+annot <- annot %>% relocate(Entry.name, .after = Entry)
+annot <- annot %>% relocate(Evalue, .after = Entry.name)
+annot <- annot %>% relocate(Gene.names, .after = Evalue)
+annot <- annot %>% relocate(Protein.names, .after = Gene.names)
+annot <- annot %>% relocate(Organism, .after = Protein.names)
+annot <- annot %>% relocate(Gene.ontology..GO., .after = Organism)
+
+write.csv(annot,file="./all/EVE/sig_HV_annot.csv",row.names = FALSE)
+```
+Add the Tukey p value results to this file in 3 columns: EvI,CvI and CvE.
+Rename this file "sig_HV_annot_ANOVA.csv"
+```{r,results='hide',tidy=TRUE}
+sig_HV_annot_ANOVA.csv <- read.csv("./all/EVE/sig_HV_annot_ANOVA.csv")
+goodEval <- sig_HV_annot_ANOVA.csv %>% filter(sig_HV_annot_ANOVA.csv$Evalue < 0.000001)
+dim(goodEval)
+# 24 genes significantly differentially expressed between disease states with good evalue
+write.csv(goodEval,file="./all/EVE/sig_HV_annot_ANOVA_goodEval.csv",row.names = FALSE)
+```
+
+##### Heatmap
+
+###### P ≤ 0.05
+
+Plot the average expression of all annotated highly variable orthologs with significant differential expression between disease states (p ≤ 0.05)
+
+```{r,results='hide',tidy=TRUE}
+HV_genes <- read.csv("./all/EVE/highlyVariable_rlogs_ortholog.csv")
+annotated_genes <- read.csv("./all/EVE/sig_HV_annot_ANOVA_goodEval.csv")
+annotated_genes <- annotated_genes$Orthogroup
+
+sig_orthologs <- HV_genes[intersect(names(HV_genes),annotated_genes)]
+sig_orthologs$name <- HV_genes$name
+sig_orthologs$status <- HV_genes$status
+sig_orthologs <- sig_orthologs %>% relocate(name, .before = everything())
+sig_orthologs <- sig_orthologs %>% relocate(status, .after = name)
+
+dim(sig_orthologs)
+sig_orthologs_ordered <- sig_orthologs[order(sig_orthologs$status),]
+sig_orthologs_ordered$status
+HV_sig_infected <- sig_orthologs_ordered[c(1:19),-c(1:2)]
+HV_sig_exposed <- sig_orthologs_ordered[c(20:27),-c(1:2)]
+HV_sig_control <- sig_orthologs_ordered[c(28:51),-c(1:2)]
+
+HV_sig_control_avg <- colMeans(HV_sig_control)
+HV_sig_exposed_avg <- colMeans(HV_sig_exposed)
+HV_sig_infected_avg <- colMeans(HV_sig_infected)
+HV_sig_genes_avg <- rbind(HV_sig_control_avg,HV_sig_exposed_avg,HV_sig_infected_avg)
+dim(HV_sig_genes_avg)
+row.names(HV_sig_genes_avg) <- c("control","exposed","infected")
+t_HV_sig_genes_avg <- data.frame(t(HV_sig_genes_avg))
+```
+
+```{r heatmap_1,fig.height=4,fig.width=3,dpi=200}
+pheatmap(t_HV_sig_genes_avg,
+         scale="row",
+         cluster_cols = FALSE,
+         cluster_rows = TRUE,
+         cellwidth = 10,
+         cellheight = 8,
+         color = colorRampPalette(c("#0571b0","#92c5de","white","#f4a582","#ca0020"))(200),
+         treeheight_row = 20,
+         treeheight_col = NULL,
+         fontsize_row = 6,
+         fontsize_col = 6
+)
+```
+##### Boxplots
+
+```{r,results='hide',tidy=TRUE}
+getwd()
+results <- read.csv("./all/EVE/sig_HV_annot_ANOVA.csv")
+names(results)
+dim(results)    # 48 significant Highly Variable EVE genes
+
+resorderd <-results[order(results$CvI),] 
+resorderd <- resorderd %>% filter(CvI < (0.05)) 
+dim(resorderd)  #4 significantly different between control and infected
+
+resorderd <-results[order(results$CvE),] 
+resorderd <- resorderd %>% filter(CvE < (0.05)) 
+dim(resorderd)  #34 significantly different between control and exposed
+
+resorderd <-results[order(results$EvI),] 
+resorderd <- resorderd %>% filter(EvI < (0.05)) 
+dim(resorderd)  #27 significantly different between exposed and infected
+
+names(results)
+results <- results[,-c(2:12)]
+t_resordered_rlogs <- setNames(as.data.frame(t(results[,-1])), results[,1])
+row.names(t_resordered_rlogs)
+t_resordered_rlogs <- tibble::rownames_to_column(t_resordered_rlogs, "name")
+view(t_resordered_rlogs)
+
+
+label <- read.csv("./all/metadata.csv")
+label <- label[-c(25,53),] # remove oann_c2 and pstr_d8
+colnames(label)
+label <- label[,c(1,3,5,8)] # keep species,name,status and dominant_clade
+results <- merge(label,t_resordered_rlogs,by="name")
+view(results)
+
+
+results$status <- gsub("healthy","control", results$status)
+results$status <- gsub("disease","infected", results$status)
+results$status <- factor(results$status, levels = c("control","exposed","infected"))
+results$species <- factor(results$species, levels = c("mcav","past","pstr","oann","cnat"))
+```
+
+###### EXD3
+```{r}
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+OG0016195 <- compare_means(OG0016195~status,data=results,method = "t.test")
+OG0016195
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+OG0016195_status <- 
+ggplot(data = results, 
+       aes(x = status, y = OG0016195, fill = status)) +
+  geom_point(aes(y = OG0016195, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Exonuclease mut-7 homolog") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(OG0016195, y.position = 7.5, step.increase = 0.14, inherit.aes = FALSE,size = 3)
+
+OG0016195_species <- 
+ggplot(data = results, 
+       aes(x = dominant_clade, y = OG0016195, fill = status)) +
+  geom_point(aes(y = OG0016195, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Exonuclease mut-7 homolog") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(OG0016195, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+ggarrange(OG0016195_species,OG0016195_status,
+          ncol=2, widths = c(1.75,1.25),
+          common.legend = TRUE, legend = "bottom",align = "hv")
+```
+
+###### Cdk2
+```{r}
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+OG0019527 <- compare_means(OG0019527~status,data=results,method = "t.test")
+OG0019527
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+OG0019527_status <- 
+ggplot(data = results, 
+       aes(x = status, y = OG0019527, fill = status)) +
+  geom_point(aes(y = OG0019527, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Cyclin-dependent kinase 2") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(OG0019527, y.position = 8.4, step.increase = 0.14, inherit.aes = FALSE,size = 3)
+
+OG0019527_species <- 
+ggplot(data = results, 
+       aes(x = dominant_clade, y = OG0019527, fill = status)) +
+  geom_point(aes(y = OG0019527, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Cyclin-dependent kinase 2") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(OG0019527, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+ggarrange(OG0019527_species,OG0019527_status,
+           ncol=2, widths = c(1.75,1.25),
+          common.legend = TRUE, legend = "bottom",align = "hv")
+```
+###### PSMD10
+```{r}
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+OG0019097 <- compare_means(OG0019097~status,data=results,method = "t.test")
+OG0019097
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+OG0019097_status <- 
+ggplot(data = results, 
+       aes(x = status, y = OG0019097, fill = status)) +
+  geom_point(aes(y = OG0019097, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "26S proteasome non-ATPase regulatory subunit 10") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(OG0019097, y.position = 7.6, step.increase = 0.14, inherit.aes = FALSE,size = 3)
+
+OG0019097_species <- 
+ggplot(data = results, 
+       aes(x = dominant_clade, y = OG0019097, fill = status)) +
+  geom_point(aes(y = OG0019097, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "26S proteasome non-ATPase regulatory subunit 10") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(OG0019097, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+ggarrange(OG0019097_species,OG0019097_status,
+          ncol=2, widths = c(1.75,1.25),
+          common.legend = TRUE, legend = "bottom",align = "hv")
+```
+
+###### GuaD
+```{r}
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+OG0016351 <- compare_means(OG0016351~status,data=results,method = "t.test")
+OG0016351
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+OG0016351_status <- 
+ggplot(data = results, 
+       aes(x = status, y = OG0016351, fill = status)) +
+  geom_point(aes(y = OG0016351, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Guanine Deaminase") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(OG0016351, y.position = 9, step.increase = 0.14, inherit.aes = FALSE,size = 3)
+
+OG0016351_species <- 
+ggplot(data = results, 
+       aes(x = dominant_clade, y = OG0016351, fill = status)) +
+  geom_point(aes(y = OG0016351, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Guanine Deaminase") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(OG0016351, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+ggarrange(OG0016351_species,OG0016351_status,
+          ncol=2, widths = c(1.75,1.25),
+          common.legend = TRUE, legend = "bottom",align = "hv")
+```
+
+###### DBR
+```{r}
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+OG0020669 <- compare_means(OG0020669~status,data=results,method = "t.test")
+OG0020669
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+OG0020669_status <- 
+ggplot(data = results, 
+       aes(x = status, y = OG0020669, fill = status)) +
+  geom_point(aes(y = OG0020669, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "2-alkenal reductase") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(OG0020669, y.position = 9, step.increase = 0.14, inherit.aes = FALSE,size = 3)
+
+OG0020669_species <- 
+ggplot(data = results, 
+       aes(x = dominant_clade, y = OG0020669, fill = status)) +
+  geom_point(aes(y = OG0020669, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "2-alkenal reductase") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_fill_manual(values = c("#57be8d","#68b7e6","#f37225"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(OG0020669, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+ggarrange(OG0020669_species,OG0020669_status,
+          ncol=2, widths = c(1.75,1.25),
+          common.legend = TRUE, legend = "bottom",align = "hv")
+```
+
+
+###### Together
+```{r allBoxplots, fig.height=8,fig.width=6,dpi=200}
+ggarrange(OG0019527_species,OG0019527_status,
+  OG0016351_species,OG0016351_status,
+  OG0020669_species,OG0020669_status,
+  ncol=2, nrow=3,widths = c(1.75,1.25),
+  common.legend = TRUE, legend = "right",align = "hv")
+```
+
+
+#### Venn Diagram
+
+```{r,results='hide',tidy=TRUE}
+sharedHV <- read.csv("./all/EVE/sig_HV_annot_ANOVA.csv")
+
+EvI <-sharedHV[order(sharedHV$EvI),] 
+EvI <- EvI %>% filter(EvI <= 0.05)
+dim(EvI)  #27
+
+CvI <-sharedHV[order(sharedHV$CvI),] 
+CvI <- CvI %>% filter(CvI <= 0.05)
+dim(CvI)  #4
+
+CvE <-sharedHV[order(sharedHV$CvE),] 
+CvE <- CvE %>% filter(CvE <= 0.05)
+dim(CvE)  #34
+
+x <- list(
+  EvI = EvI$Orthogroup,
+  CvI = CvI$Orthogroup,
+  CvE = CvE$Orthogroup
+  )
+```
+
+```{r HV_vennDiagram, fig.height=3,fig.width=3,dpi=200}
+ggvenn(
+  x,
+  fill_color = c("#2ECFCA", "#F8DF77", "#FF4E62"),
+  show_percentage = FALSE,
+  stroke_size = 0.3, set_name_size = 3
+)
+```
+
+## Lineage Specific Genes
+
+```{r,results='hide',tidy=TRUE}
+sig_EVE <- read.csv("./all/EVE/sig_EVE_rlogs.csv")
+LineageGenes <- subset(sig_EVE, sig_EVE$category == "Lineage Specific")
+names(LineageGenes)
+dim(LineageGenes)  # 292 56
+LineageGenes <- LineageGenes[,-c(1,3:5)]
+LineageGenes_ordered <- LineageGenes[c("Orthogroup","past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7","pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7","cnat_c3","cnat_c4","cnat_d3","cnat_d4","mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8","oann_c1","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8","cnat_c2","cnat_c6","cnat_c8","cnat_d2","cnat_d6","cnat_d8")]
+
+#Average the rlog counts across species
+colnames(LineageGenes_ordered)
+LineageGenes_ordered$SymbA <- rowMeans(LineageGenes_ordered[,c(2:12)])
+LineageGenes_ordered$SymbB <- rowMeans(LineageGenes_ordered[,c(13:19)])
+LineageGenes_ordered$SymbC <- rowMeans(LineageGenes_ordered[,c(20:46)])
+LineageGenes_ordered$SymbD <- rowMeans(LineageGenes_ordered[,c(47:52)])
+names(LineageGenes_ordered)
+LSavg <- LineageGenes_ordered[,c(1,53:56)]
+names(LSavg)
+write.csv(LSavg,file="./all/EVE/lineage_species_avg.csv")
+
+symbD_annot <- read.csv("./all/Orthofinder/SymbD_sc_orthologs_annotated.csv")
+symbD_contig <- read.csv("./all/Orthofinder/SymbD_contig_to_orthogroup.csv")
+symbD_contig <- symbD_contig[,-c(1)]
+colnames(symbD_contig)[colnames(symbD_contig)=="SymbD_proteome_cdhit"] <- "SymbD_contig"
+symbD_info <- merge(symbD_annot,symbD_contig,by="SymbD_contig")
+names(symbD_info)
+names(LSavg)
+LSavg <- left_join(LSavg,symbD_info,by="Orthogroup")
+
+LSavg <- LSavg %>% relocate(SymbD_contig, .after = Orthogroup)
+LSavg <- LSavg %>% relocate(Entry, .after = SymbD_contig)
+LSavg <- LSavg %>% relocate(Entry.name, .after = Entry)
+LSavg <- LSavg %>% relocate(Evalue, .after = Entry.name)
+
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+annot <- left_join(LSavg,uniprot,by="Entry")
+colnames(annot)
+annot <- annot[,-c(10)]
+colnames(annot)[8] <- "Entry.name"
+annot <- annot %>% relocate(SymbD_contig, .after = Orthogroup)
+annot <- annot %>% relocate(Entry, .after = SymbD_contig)
+annot <- annot %>% relocate(Entry.name, .after = Entry)
+annot <- annot %>% relocate(Evalue, .after = Entry.name)
+annot <- annot %>% relocate(Gene.names, .after = Evalue)
+annot <- annot %>% relocate(Protein.names, .after = Gene.names)
+annot <- annot %>% relocate(Organism, .after = Protein.names)
+annot <- annot %>% relocate(Gene.ontology..GO., .after = Organism)
+
+write.csv(annot,file="./all/EVE/sig_LS_avg_annot.csv")
+
+goodEval <- annot %>% filter(annot$Evalue < 0.000001)
+# 120 orthologs of good evalue
+write.csv(goodEval,file="./all/EVE/sig_LS_avg_annot_goodEval.csv")
+```
+
+### Correlate to LGR
+```{r,tidy=TRUE}
+LSavg <- read.csv("./all/EVE/sig_LS_avg_annot_goodEval.csv",row.names = "Orthogroup")
+names(LSavg)
+LSavg <- LSavg[,-c(1:9)]
+
+LS_rlogs <- as.data.frame(t(LSavg))
+rownames(LS_rlogs)
+
+Genera <- c("SymbA","SymbB","SymbC","SymbD")
+Avg_LGR <- c(0.01989343,0.04536232,0.09139629,0.69000000)
+label <- data.frame(Genera,Avg_LGR)
+label <- tibble::column_to_rownames(label,"Genera")
+
+rownames(label)
+rownames(LS_rlogs)
+
+LS_rlogs$Genera <- rownames(LS_rlogs)
+LS_rlogs$LGR <- label$Avg_LGR
+LS_rlogs <- LS_rlogs %>% relocate(Genera, .before = everything())
+LS_rlogs <- LS_rlogs %>% relocate(LGR, .after = Genera)
+
+##### Correlate to Lesion Growth Rate
+
+# Loop through all tests, print estimates and p-values if p <=0.05
+for (i in 3:length(LS_rlogs)){
+   a <- cor.test(LS_rlogs$LGR, LS_rlogs[,i],method = c("pearson"))
+   if (a$p.value <= 0.01){
+      print(paste(colnames(LS_rlogs)[i], " corr:", a$estimate, " p-value:", a$p.value))
+   }
+}
+```
+
+##### Scatterplots
+###### OG0015519
+```{r,tidy=TRUE}
+LS_rlogs$Genera <- factor(LS_rlogs$Genera, levels = c("SymbA","SymbB","SymbC","SymbD"))
+
+OG0015519 <- 
+   ggplot(LS_rlogs,aes(x=LGR, y=OG0015519))+
+   geom_point(aes(x=LGR, y=OG0015519, color=Genera), position = "identity",size=3)+
+   geom_smooth(method=glm, color="black")+
+   #geom_text(label=row.names(LS_rlogs), nudge_y = -0.5)+
+   labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "Probable protein phosphatase 2C 45")+
+  scale_color_manual(values=c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+   stat_cor(label.x.npc = "left",label.y = 3.7)
+OG0015519
+```
+###### OG0019650
+
+```{r,tidy=TRUE}
+LS_rlogs$Genera <- factor(LS_rlogs$Genera, levels = c("SymbA","SymbB","SymbC","SymbD"))
+
+OG0019650 <- 
+   ggplot(LS_rlogs,aes(x=LGR, y=OG0019650))+
+   geom_point(aes(x=LGR, y=OG0019650, color=Genera), position = "identity",size=3)+
+   geom_smooth(method=glm, color="black")+
+   #geom_text(label=row.names(LS_rlogs), nudge_y = -0.5)+
+   labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "Charged multivesicular body protein 3")+
+  scale_color_manual(values=c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+   stat_cor(label.x.npc = "left",label.y = 3.7)
+OG0019650
+```
+
+###### OG0020771
+```{r,tidy=TRUE}
+LS_rlogs$Genera <- factor(LS_rlogs$Genera, levels = c("SymbA","SymbB","SymbC","SymbD"))
+
+OG0020771 <- 
+   ggplot(LS_rlogs,aes(x=LGR, y=OG0020771))+
+   geom_point(aes(x=LGR, y=OG0020771, color=Genera), position = "identity",size=3)+
+   geom_smooth(method=glm, color="black")+
+   #geom_text(label=row.names(LS_rlogs), nudge_y = -0.5)+
+   labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "Zinc finger CCCH domain-containing protein 1")+
+  scale_color_manual(values=c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+   stat_cor(label.x.npc = "left",label.y = 3.7)
+OG0020771
+```
+###### OG0021017
+```{r,tidy=TRUE}
+LS_rlogs$Genera <- factor(LS_rlogs$Genera, levels = c("SymbA","SymbB","SymbC","SymbD"))
+
+OG0021017 <- 
+   ggplot(LS_rlogs,aes(x=LGR, y=OG0021017))+
+   geom_point(aes(x=LGR, y=OG0021017, color=Genera), position = "identity",size=3)+
+   geom_smooth(method=glm, color="black")+
+   #geom_text(label=row.names(LS_rlogs), nudge_y = -0.5)+
+   labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "Serine/threonine protein phosphatase 2A regulatory subunit B''beta")+
+  scale_color_manual(values=c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+   stat_cor(label.x.npc = "left",label.y = 3.7)
+OG0021017
+```
+
+###### Combined
+```{r LGR,fig.height=3,fig.width=10,dpi=200}  
+ggarrange(OG0015519,OG0019650,OG0020771,OG0021017,
+          ncol = 4, nrow = 1, legend = "none",
+          common.legend = FALSE,
+          align = "hv"
+          )
+```
+
+#### Heatmaps
+
+```{r,tidy=TRUE}
+LSavg <- read.csv("./all/EVE/sig_LS_avg_annot_goodEval.csv",row.names = "Orthogroup")
+names(LSavg)
+LSavg <- LSavg[,-c(1:9)]
+write.csv(LSavg,file="./all/EVE/LS_species_avg_entry.csv",row.names = FALSE)
+
+breaksList=seq(0,12,by=1)
+```
+Plot Lesion Growth Rate Heatmap
+```{r RR_Heatmap,fig.height=6,fig.width=6,dpi=200}
+LSavg <- LSavg[,c("SymbA","SymbB","SymbC","SymbD")]
+LGRGenes <- LSavg[c("OG0015519","OG0019650","OG0020771","OG0021017"),]
+pheatmap(LGRGenes,
+         cluster_cols = FALSE,
+         cluster_rows = TRUE,
+         scale = "none",
+         color = colorRampPalette(c("white","#fed976","#fc4e2a","#67000d"))(12),
+         border_color = "grey50",
+         annotation_col = label,
+         legend = TRUE,
+         #breaks = breaksList,
+         legend_labels = label,
+         fontsize_row = 7,
+         fontsize_col = 10,
+         cellwidth = 20,
+         cellheight = 20
+         )
+```

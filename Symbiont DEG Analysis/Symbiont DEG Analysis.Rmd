@@ -1,0 +1,906 @@
+---
+title: "Symbiont DEG Analysis"
+author: "Kelsey Beavers"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    keep_md: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/")
+knitr::opts_chunk$set(dev='ragg_png')
+library(tximport)
+library(tibble)
+library(reshape2)
+library(DESeq2)
+library(dplyr)
+library(PCAtools)
+library(ggalt)
+library(ggplot2)
+library(lifecycle)
+library(ggvenn)
+library(stringr)
+library(ggpubr)
+library(pheatmap)
+library(utils)
+library(corrplot)
+library(repr) 
+```
+
+## Count Matrix Generation
+
+First we read in our raw counts from Salmon by Symbiodiniaceae genera and turn them into count matrices using Tximport.
+
+### Symbiodinium Counts
+
+Read in the raw counts for all samples dominant in Symbiodinium symbionts
+
+Past: c1, c5, c6, c7, d1, d2, d3, d4, d5, d6, d7
+
+```{r,results='hide',tidy=TRUE}
+setwd("./cladeA/salmon/")
+cladeA_samples <- read.table("cladeA_samples.csv", header = TRUE)
+cladeA_files <- file.path(cladeA_samples$sample, "quant.sf")
+names(cladeA_files) <- paste0("sample", 1:11)
+all(file.exists(cladeA_files))
+# Do not continue if output shows [FALSE]
+CladeA_tx2gene <- read.csv("cladeA_tx2gene.csv")
+cladeA_txi <- tximport(cladeA_files, type = 'salmon',tx2gene=CladeA_tx2gene)
+dim(cladeA_txi$counts)
+# 10,675 transcripts with evalue ≤ 1.00E-06
+
+cladeA_counts <- cladeA_txi$counts
+cladeA_counts <- as.data.frame(cladeA_counts)
+colnames(cladeA_counts) <- c("past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7")
+cladeA_counts <- tibble::rownames_to_column(cladeA_counts,"Entry")
+cladeA_counts[2:12] <-  round(cladeA_counts[2:12], digits=0)
+cladeA_counts <- as.data.frame(cladeA_counts)
+write.csv(cladeA_counts, file = "cladeA_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### Breviolum Counts
+
+Read in the raw counts for all samples dominant in Breviolum symbionts
+
+Pstr: c3, c5, c7, c8, d3, d5, d7
+
+```{r,results='hide',tidy=TRUE}
+setwd("./cladeB/salmon")
+cladeB_samples <- read.table("cladeB_samples.csv", header = TRUE)
+cladeB_files <- file.path(cladeB_samples$sample, "quant.sf")
+names(cladeB_files) <- paste0("sample", 1:7)
+all(file.exists(cladeB_files))
+# Do not continue if output shows [FALSE]
+CladeB_tx2gene <- read.csv("CladeB_tx2gene.csv")
+cladeB_txi <- tximport(cladeB_files, type = 'salmon',tx2gene=CladeB_tx2gene)
+dim(cladeB_txi$counts)
+# 10,072 transcripts with evalue ≤ 1.00E-06
+
+cladeB_counts <- cladeB_txi$counts
+cladeB_counts <- as.data.frame(cladeB_counts)
+colnames(cladeB_counts) <- c("pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7")
+cladeB_counts <- tibble::rownames_to_column(cladeB_counts,"Entry")
+cladeB_counts[2:8] <-  round(cladeB_counts[2:8], digits=0)
+cladeB_counts <- as.data.frame(cladeB_counts)
+write.csv(cladeB_counts, file = "cladeB_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### Cladocopium Counts
+
+Read in the raw counts for all samples dominant in Cladocopium symbionts
+
+Cnat: c3, c4, d3, d4
+
+Mcav: c1, c3, c5, c6, c7, c8, d1, d2, d3, d4, d5, d6, d8
+
+Oann: c1, c2, c3, c6, c7, c8, d1, d3, d6, d7, d8
+
+```{r,results='hide',tidy=TRUE}
+setwd("./cladeC/salmon")
+cladeC_samples <- read.table("cladeC_samples.csv", header = TRUE)
+cladeC_files <- file.path(cladeC_samples$sample, "quant.sf")
+names(cladeC_files) <- paste0("sample", 1:28)
+all(file.exists(cladeC_files))
+# Do not continue if output shows [FALSE]
+
+CladeC_tx2gene <- read.csv("cladeC_tx2gene.csv")
+cladeC_txi <- tximport(cladeC_files, type = 'salmon',tx2gene=CladeC_tx2gene)
+dim(cladeC_txi$counts)
+# 11,939 transcripts with evalue ≤ 1.00E-06
+
+cladeC_counts <- cladeC_txi$counts
+cladeC_counts <- as.data.frame(cladeC_counts)
+colnames(cladeC_counts) <- c("cnat_c3","cnat_c4","cnat_d3","cnat_d4","mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8","oann_c1","oann_c2","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8")
+cladeC_counts <- tibble::rownames_to_column(cladeC_counts,"Entry")
+cladeC_counts[2:29] <-  round(cladeC_counts[2:29], digits=0)
+cladeC_counts <- as.data.frame(cladeC_counts)
+write.csv(cladeC_counts, file = "cladeC_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### Durusdinium Counts
+
+Read in the raw counts for all samples dominant in Durusdinium symbionts
+
+Cnat: c2, c6 ,c8, d2, d6, d8
+
+```{r,results='hide',tidy=TRUE}
+setwd("./cladeD/salmon/")
+cladeD_samples <- read.table("cladeD_samples.csv", header = TRUE)
+cladeD_files <- file.path(cladeD_samples$sample, "quant.sf")
+names(cladeD_files) <- paste0("sample", 1:6)
+all(file.exists(cladeD_files))
+# Do not continue if output shows [FALSE]
+
+CladeD_tx2gene <- read.csv("cladeD_tx2gene.csv")
+cladeD_txi <- tximport(cladeD_files, type = 'salmon',tx2gene=CladeD_tx2gene)
+dim(cladeD_txi$counts)
+# 10,328 transcripts with evalue ≤ 1.00E-06
+
+cladeD_counts <- cladeD_txi$counts
+cladeD_counts <- as.data.frame(cladeD_counts)
+colnames(cladeD_counts) <- c("cnat_c2","cnat_c6","cnat_c8","cnat_d2","cnat_d6","cnat_d8")
+cladeD_counts <- tibble::rownames_to_column(cladeD_counts,"Entry")
+cladeD_counts[2:7] <-  round(cladeD_counts[2:7], digits=0)
+cladeD_counts <- as.data.frame(cladeD_counts)
+write.csv(cladeD_counts, file = "cladeD_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+## Expression Matrix Generation
+
+Next we run each genera's count matrix through DESeq2 to obtain rlog normalized expression matrices and determine significantly differentially expressed genes (DEGs)
+
+### Symbiodinium Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+cladeA_countData <- read.csv("./cladeA/salmon/cladeA_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+cladeAColData <- colData[colData$dominant_clade == 'A',]
+
+# Set the design. This design will test for the differences in expression caused by treatment 
+dds <- DESeqDataSetFromMatrix(countData = cladeA_countData, 
+                                        colData = cladeAColData, 
+                                        design = ~treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+cladeA_res <- as.data.frame(res[order(res$padj),])
+write.csv(cladeA_res, file = "./cladeA/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+cladeA_rlogs <- as.data.frame(assay(rld))
+write.csv(cladeA_rlogs, file = "./cladeA/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- cladeA_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./cladeA/DESeq2/treatment_sig_DEGs.csv")  
+# 0 DEGs
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Symbiodinium PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(cladeA_rlogs, metadata = cladeAColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+symbiodiniumPCA <- 
+  biplot(p,
+       lab = cladeAColData$sample_number,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-60,50), ylim = c(-40,50),
+       title = 'Symbiodinium Gene Expression PCA',
+       titleLabSize = 16,
+       legendPosition = 'right') 
+symbiodiniumPCA
+```
+
+No outliers detected in the Symbiodinium samples
+
+### Breviolum Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+cladeB_countData <- read.csv("./cladeB/salmon/cladeB_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+cladeBColData <- colData[colData$dominant_clade == 'B',]
+
+# Set the design. This design will test for the differences in expression caused by treatment 
+dds <- DESeqDataSetFromMatrix(countData = cladeB_countData, 
+                                        colData = cladeBColData, 
+                                        design = ~treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+cladeB_res <- as.data.frame(res[order(res$padj),])
+write.csv(cladeB_res, file = "./cladeB/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+cladeB_rlogs <- as.data.frame(assay(rld))
+write.csv(cladeB_rlogs, file = "./cladeB/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- cladeB_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./cladeB/DESeq2/treatment_sig_DEGs.csv")  
+print(DEGs)
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Breviolum PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(cladeB_rlogs, metadata = cladeBColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+breviolumPCA <- 
+  biplot(p,
+       #lab = cladeBColData$sample_number,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-30,50), ylim = c(-40,50),
+       title = 'Breviolum Gene Expression PCA',
+       titleLabSize = 16,
+       legendPosition = 'right') 
+breviolumPCA
+```
+
+No outliers detected in the Breviolum samples
+
+### Cladocopium Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+cladeC_countData <- read.csv("./cladeC/salmon/cladeC_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+cladeCColData <- colData[colData$dominant_clade == 'C',]
+rownames(cladeCColData)
+colnames(cladeC_countData)
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for the effect of host species
+dds <- DESeqDataSetFromMatrix(countData = cladeC_countData, 
+                                        colData = cladeCColData, 
+                                        design = ~species + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+cladeC_res <- as.data.frame(res[order(res$padj),])
+write.csv(cladeC_res, file = "./cladeC/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+cladeC_rlogs <- as.data.frame(assay(rld))
+write.csv(cladeC_rlogs, file = "./cladeC/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- cladeC_res %>% filter(padj < 0.05)
+print(DEGs)
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Cladocopium PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(cladeC_rlogs, metadata = cladeCColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+cladocopiumPCA <- 
+  biplot(p,
+       #lab = cladeBColData$sample_number,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-80,100), ylim = c(-60,120),
+       title = 'Cladocopium Gene Expression PCA',
+       titleLabSize = 16,
+       max.overlaps = 3,
+       legendPosition = 'right') 
+cladocopiumPCA
+```
+
+Oann_c2 is an outlier. We need to remove it and re-do count matrix and expression matrix generation:
+
+#### Count Matrix Generation (outlier removed)
+
+Read in the raw counts all samples dominant in Cladocopium symbionts, this time without Oann_c2. Remove it from your "cladeC_samples.csv" file.
+
+Cnat: c3, c4, d3, d4
+
+Mcav: c1, c3, c5, c6, c7, c8, d1, d2, d3, d4, d5, d6, d8
+
+Oann: c1, *c2 - remove!*, c3, c6, c7, c8, d1, d3, d6, d7, d8
+
+```{r,results='hide',tidy=TRUE}
+setwd("./cladeC/salmon")
+cladeC_samples <- read.csv("cladeC_samples_no_outlier.csv")
+cladeC_files <- file.path(cladeC_samples$sample, "quant.sf")
+names(cladeC_files) <- paste0("sample", 1:27)
+all(file.exists(cladeC_files))
+# Do not continue if output shows [FALSE]
+
+CladeC_tx2gene <- read.csv("cladeC_tx2gene.csv")
+cladeC_txi <- tximport(cladeC_files, type = 'salmon',tx2gene=CladeC_tx2gene)
+dim(cladeC_txi$counts)
+# 11,939 transcripts with evalue ≤ 1.00E-06
+
+cladeC_counts <- cladeC_txi$counts
+cladeC_counts <- as.data.frame(cladeC_counts)
+colnames(cladeC_counts) <- c("cnat_c3","cnat_c4","cnat_d3","cnat_d4","mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8","oann_c1","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8")
+cladeC_counts <- tibble::rownames_to_column(cladeC_counts,"Entry")
+cladeC_counts[2:28] <-  round(cladeC_counts[2:28], digits=0)
+cladeC_counts <- as.data.frame(cladeC_counts)
+write.csv(cladeC_counts, file = "cladeC_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### Cladocopium Gene Expression (outlier removed)
+
+```{r,results='hide',tidy=TRUE}
+cladeC_countData <- read.csv("./cladeC/salmon/cladeC_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+cladeCColData <- colData[colData$dominant_clade == 'C',]
+# Remove oann_c2 (outlier)
+cladeCColData <- cladeCColData[-c(19),]
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for the effect of host species
+dds <- DESeqDataSetFromMatrix(countData = cladeC_countData, 
+                                        colData = cladeCColData, 
+                                        design = ~species + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+cladeC_res <- as.data.frame(res[order(res$padj),])
+write.csv(cladeC_res, file = "./cladeC/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+cladeC_rlogs <- as.data.frame(assay(rld))
+write.csv(cladeC_rlogs, file = "./cladeC/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- cladeC_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./cladeC/DESeq2/treatment_sig_DEGs.csv")  
+print(DEGs)
+```
+
+### Durusdinium Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+cladeD_countData <- read.csv("./cladeD/salmon/cladeD_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+cladeDColData <- colData[colData$dominant_clade == 'D',]
+
+# Set the design. This design will test for the differences in expression caused by treatment 
+dds <- DESeqDataSetFromMatrix(countData = cladeD_countData, 
+                                        colData = cladeDColData, 
+                                        design = ~treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+cladeD_res <- as.data.frame(res[order(res$padj),])
+write.csv(cladeD_res, file = "./cladeD/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+cladeD_rlogs <- as.data.frame(assay(rld))
+write.csv(cladeD_rlogs, file = "./cladeD/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- cladeD_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./cladeD/DESeq2/treatment_sig_DEGs.csv")  
+print(DEGs)
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Durusdinium PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(cladeD_rlogs, metadata = cladeDColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+durusdiniumPCA <- 
+  biplot(p,
+       #lab = cladeBColData$sample_number,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-30,30), ylim = c(-25,20),
+       title = 'Durusdinium Gene Expression PCA',
+       titleLabSize = 16,
+       legendPosition = 'right') 
+durusdiniumPCA
+```
+
+No outliers detected in the Durusdinium samples
+
+## Symbiont Composition Bar Charts
+
+Use the %unambiguousReads column from the BBSplit output to visualize the Symbiodiniaceae genera relative abundance.
+
+### C. natans
+
+```{r cnat symbiont relative abundance,fig.height=4,fig.width=6,dpi=200,tidy=TRUE}
+metaData <- read.csv("./../metaData.csv")
+cnatData <- metaData[metaData$species == 'cnat',]
+names(cnatData)
+colnames(cnatData)[colnames(cnatData)=="X.unambiguousReads_host"] <- "Host"
+colnames(cnatData)[colnames(cnatData)=="X.unambiguousReads_cladeA"] <- "A"
+colnames(cnatData)[colnames(cnatData)=="X.unambiguousReads_cladeB"] <- "B"
+colnames(cnatData)[colnames(cnatData)=="X.unambiguousReads_cladeC"] <- "C"
+colnames(cnatData)[colnames(cnatData)=="X.unambiguousReads_cladeD"] <- "D"
+colnames(cnatData)[colnames(cnatData)=="X.unambiguousReads_unmatched"] <- "Unmatched"
+cnatData <- cnatData[,c(3,4,13:16)] #name,treatment,A:D
+
+cnat_reshape <- melt(cnatData,id=c("name","treatment"))
+colnames(cnat_reshape)[colnames(cnat_reshape)=="variable"] <- "Transcriptome"
+colnames(cnat_reshape)[colnames(cnat_reshape)=="value"] <- "Reads"
+colnames(cnat_reshape)[colnames(cnat_reshape)=="name"] <- "Sample"
+colnames(cnat_reshape)[colnames(cnat_reshape)=="treatment"] <- "Treatment"
+
+cnat <- ggplot(cnat_reshape,aes(fill=Transcriptome, y = Reads, x =Sample))+
+  geom_bar(position="fill",stat="identity")+
+  labs(x = "Sample",y="Proportion of Symbiont Reads")+
+  scale_fill_manual(values = c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+  facet_wrap(~Treatment,scales = 'free_x')+
+  theme_light()+
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(size=10))
+cnat
+```
+
+
+### M. cavernosa
+
+```{r mcav symbiont relative abundance,fig.height=4,fig.width=6,dpi=200,tidy=TRUE}
+metaData <- read.csv("./../metaData.csv")
+mcavData <- metaData[metaData$species == 'mcav',]
+names(mcavData)
+colnames(mcavData)[colnames(mcavData)=="X.unambiguousReads_host"] <- "Host"
+colnames(mcavData)[colnames(mcavData)=="X.unambiguousReads_cladeA"] <- "A"
+colnames(mcavData)[colnames(mcavData)=="X.unambiguousReads_cladeB"] <- "B"
+colnames(mcavData)[colnames(mcavData)=="X.unambiguousReads_cladeC"] <- "C"
+colnames(mcavData)[colnames(mcavData)=="X.unambiguousReads_cladeD"] <- "D"
+colnames(mcavData)[colnames(mcavData)=="X.unambiguousReads_unmatched"] <- "Unmatched"
+mcavData <- mcavData[,c(3,4,13:16)] #name,treatment,A:D
+
+mcav_reshape <- melt(mcavData,id=c("name","treatment"))
+colnames(mcav_reshape)[colnames(mcav_reshape)=="variable"] <- "Transcriptome"
+colnames(mcav_reshape)[colnames(mcav_reshape)=="value"] <- "Reads"
+colnames(mcav_reshape)[colnames(mcav_reshape)=="name"] <- "Sample"
+colnames(mcav_reshape)[colnames(mcav_reshape)=="treatment"] <- "Treatment"
+
+mcav <- ggplot(mcav_reshape,aes(fill=Transcriptome, y = Reads, x =Sample))+
+  geom_bar(position="fill",stat="identity")+
+  labs(x = "Sample",y="Proportion of Symbiont Reads")+
+  scale_fill_manual(values = c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+  facet_wrap(~Treatment,scales = 'free_x')+
+  theme_light()+
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(size=10))
+mcav
+```
+
+
+### O. annularis
+
+```{r oann symbiont relative abundance,fig.height=4,fig.width=6,dpi=200,tidy=TRUE}
+metaData <- read.csv("./../metaData.csv")
+oannData <- metaData[metaData$species == 'oann',]
+names(oannData)
+colnames(oannData)[colnames(oannData)=="X.unambiguousReads_host"] <- "Host"
+colnames(oannData)[colnames(oannData)=="X.unambiguousReads_cladeA"] <- "A"
+colnames(oannData)[colnames(oannData)=="X.unambiguousReads_cladeB"] <- "B"
+colnames(oannData)[colnames(oannData)=="X.unambiguousReads_cladeC"] <- "C"
+colnames(oannData)[colnames(oannData)=="X.unambiguousReads_cladeD"] <- "D"
+colnames(oannData)[colnames(oannData)=="X.unambiguousReads_unmatched"] <- "Unmatched"
+oannData <- oannData[,c(3,4,13:16)] #name,treatment,A:D
+
+oann_reshape <- melt(oannData,id=c("name","treatment"))
+colnames(oann_reshape)[colnames(oann_reshape)=="variable"] <- "Transcriptome"
+colnames(oann_reshape)[colnames(oann_reshape)=="value"] <- "Reads"
+colnames(oann_reshape)[colnames(oann_reshape)=="name"] <- "Sample"
+colnames(oann_reshape)[colnames(oann_reshape)=="treatment"] <- "Treatment"
+
+oann <- ggplot(oann_reshape,aes(fill=Transcriptome, y = Reads, x =Sample))+
+  geom_bar(position="fill",stat="identity")+
+  labs(x = "Sample",y="Proportion of Symbiont Reads")+
+  scale_fill_manual(values = c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+  facet_wrap(~Treatment,scales = 'free_x')+
+  theme_light()+
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(size=10))
+oann
+```
+
+### P. astreoides
+
+```{r past symbiont relative abundance,fig.height=4,fig.width=6,dpi=200,tidy=TRUE}
+metaData <- read.csv("./../metaData.csv")
+pastData <- metaData[metaData$species == 'past',]
+names(pastData)
+colnames(pastData)[colnames(pastData)=="X.unambiguousReads_host"] <- "Host"
+colnames(pastData)[colnames(pastData)=="X.unambiguousReads_cladeA"] <- "A"
+colnames(pastData)[colnames(pastData)=="X.unambiguousReads_cladeB"] <- "B"
+colnames(pastData)[colnames(pastData)=="X.unambiguousReads_cladeC"] <- "C"
+colnames(pastData)[colnames(pastData)=="X.unambiguousReads_cladeD"] <- "D"
+colnames(pastData)[colnames(pastData)=="X.unambiguousReads_unmatched"] <- "Unmatched"
+pastData <- pastData[,c(3,4,13:16)] #name,treatment,A:D
+
+past_reshape <- melt(pastData,id=c("name","treatment"))
+colnames(past_reshape)[colnames(past_reshape)=="variable"] <- "Transcriptome"
+colnames(past_reshape)[colnames(past_reshape)=="value"] <- "Reads"
+colnames(past_reshape)[colnames(past_reshape)=="name"] <- "Sample"
+colnames(past_reshape)[colnames(past_reshape)=="treatment"] <- "Treatment"
+
+past <- ggplot(past_reshape,aes(fill=Transcriptome, y = Reads, x =Sample))+
+  geom_bar(position="fill",stat="identity")+
+  labs(x = "Sample",y="Proportion of Symbiont Reads")+
+  scale_fill_manual(values = c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+  facet_wrap(~Treatment,scales = 'free_x')+
+  theme_light()+
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(size=10))
+past
+```
+
+### P. strigosa
+
+```{r pstr symbiont relative abundance,fig.height=4,fig.width=6,dpi=200,tidy=TRUE}
+metaData <- read.csv("./../metaData.csv")
+pstrData <- metaData[metaData$species == 'pstr',]
+names(pstrData)
+colnames(pstrData)[colnames(pstrData)=="X.unambiguousReads_host"] <- "Host"
+colnames(pstrData)[colnames(pstrData)=="X.unambiguousReads_cladeA"] <- "A"
+colnames(pstrData)[colnames(pstrData)=="X.unambiguousReads_cladeB"] <- "B"
+colnames(pstrData)[colnames(pstrData)=="X.unambiguousReads_cladeC"] <- "C"
+colnames(pstrData)[colnames(pstrData)=="X.unambiguousReads_cladeD"] <- "D"
+colnames(pstrData)[colnames(pstrData)=="X.unambiguousReads_unmatched"] <- "Unmatched"
+pstrData <- pstrData[,c(3,4,13:16)] #name,treatment,A:D
+
+pstr_reshape <- melt(pstrData,id=c("name","treatment"))
+colnames(pstr_reshape)[colnames(pstr_reshape)=="variable"] <- "Transcriptome"
+colnames(pstr_reshape)[colnames(pstr_reshape)=="value"] <- "Reads"
+colnames(pstr_reshape)[colnames(pstr_reshape)=="name"] <- "Sample"
+colnames(pstr_reshape)[colnames(pstr_reshape)=="treatment"] <- "Treatment"
+
+pstr <- ggplot(pstr_reshape,aes(fill=Transcriptome, y = Reads, x =Sample))+
+  geom_bar(position="fill",stat="identity")+
+  labs(x = "Sample",y="Proportion of Symbiont Reads")+
+  scale_fill_manual(values = c("#fff7bc","#a1dab4","#41b6c4","#225ea8"))+
+  facet_wrap(~Treatment,scales = 'free_x')+
+  theme_light()+
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(size=10))
+pstr
+```
+
+### Combined
+
+```{r combined symbiont relative abundance,fig.height=8,fig.width=12,dpi=200,tidy=TRUE}
+ggarrange(past,
+          pstr,
+          mcav,
+          oann,
+          cnat,
+          ncol=3, nrow = 2, common.legend = TRUE, legend = "right",align = "hv")
+```
+
+
+## Venn Diagram - DEGs
+
+```{r DEGs VENN,fig.height=3,fig.width=3,dpi=200,tidy=TRUE, message=FALSE}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/")
+cladeA <- read.csv("./cladeA/DESeq2/treatment_sig_DEGs.csv")
+cladeB <- read.csv("./cladeB/DESeq2/treatment_sig_DEGs.csv")
+cladeC <- read.csv("./cladeC/DESeq2/treatment_sig_DEGs.csv")
+cladeD <- read.csv("./cladeD/DESeq2/treatment_sig_DEGs.csv")
+colnames(cladeA)[colnames(cladeA)=="X"] <- "Entry"
+colnames(cladeB)[colnames(cladeB)=="X"] <- "Entry"
+colnames(cladeC)[colnames(cladeC)=="X"] <- "Entry"
+colnames(cladeD)[colnames(cladeD)=="X"] <- "Entry"
+
+x <- list(
+  cladeA = cladeA$Entry,
+  cladeB = cladeB$Entry,
+  cladeC = cladeC$Entry,
+  cladeD = cladeD$Entry
+)
+
+ggvenn(
+  x,
+  fill_color = c("#FFF7BC", "#A1DAB4", "#41B6C4", "#225EA8"),
+  stroke_size = 0.5, set_name_size = 3,show_percentage = FALSE
+)
+```
+
+## Rab7 Correlation Analysis
+
+### Merge Count Matrices
+
+First we need to merge the individual genera count matrices together. We will merge on their Uniprot ID (inferred homolog).
+
+```{r,tidy=TRUE}
+cladeA_counts <- read.csv("./cladeA/salmon/cladeA_counts.csv")
+cladeB_counts <- read.csv("./cladeB/salmon/cladeB_counts.csv")
+cladeC_counts <- read.csv("./cladeC/salmon/cladeC_counts.csv")
+cladeD_counts <- read.csv("./cladeD/salmon/cladeD_counts.csv")
+
+A_B <- merge(cladeA_counts,cladeB_counts,by="Entry")
+A_B_C <- merge(A_B,cladeC_counts,by="Entry")
+all_counts <- merge(A_B_C,cladeD_counts,by="Entry")
+# 3379 shared uniprot ID's
+```
+
+Next we need to run this count matrix through DESeq2 to get normalized expression.
+
+```{r,tidy=TRUE}
+all_countData <- tibble::column_to_rownames(all_counts,"Entry")
+colData <- read.csv("./../metaData.csv",row.names = "name")
+# Remove Oann_c2
+colData <- colData[-c(37),]
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for host species
+dds <- DESeqDataSetFromMatrix(countData = all_countData, 
+                                        colData = colData, 
+                                        design = ~species + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+rld <- rlog(dds, blind=FALSE) 
+all_rlogs <- as.data.frame(assay(rld))
+write.csv(all_rlogs, file = "./all/DESeq2/all_symbionts_rlogs.csv")  
+```
+
+Correlate Coral host Rab7 expression to histology, the three shared symbiont photosystem genes (psaA, psbB and psbC) and four representative metabolism genes
+psaA = Q9XQV3
+psbB = P49471
+psbC = P49472
+High affinity nitrate transporter 2.5 (NRT2.5) = Q9LPV5
+Superoxide dismutase = Q59094
+Carbonic anhydrase = Q5BCC5
+Apoptosis-inducing factor 3 = Q96NN9
+Heat shock 70 kDa protein = P11144
+Two pore calcium channel protein 1 = Q5QM84
+
+### Clade A
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+coralShared_rlogs <- read.csv("treatment_rlog.csv",row.names = "X")
+colnames(coralShared_rlogs)[colnames(coralShared_rlogs)=="X"] <- "Entry"
+rab7 <- coralShared_rlogs[c("H9BW96"),]
+names(rab7)
+t_rab7 <- as.data.frame(t(rab7))
+t_rab7 <- tibble::rownames_to_column(t_rab7, "name")
+
+histology <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/histologyData.csv")
+names(histology)
+cladeA_histology <- histology[histology$dominant_genus == 'Symbiodinium',]
+rownames(cladeA_histology)
+cladeA_histology <- cladeA_histology[,c(3,7:9)]
+cladeA_histology
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeA/DESeq2/")
+cladeA_rlog <- read.csv("treatment_rlog.csv",row.names = "X")
+names(cladeA_rlog)
+curatedGenes <- cladeA_rlog[c("Q9XQV3","P49471","P49472","Q9LPV5","Q59094","Q5BCC5","Q96NN9","P11144","Q5QM84"),]
+t_rlogs <- as.data.frame(t(curatedGenes))
+t_rlogs <- tibble::rownames_to_column(t_rlogs, "name")
+cladeA_correlations <- merge(t_rab7,cladeA_histology,by="name")
+cladeA_correlations <- merge(cladeA_correlations,t_rlogs,by="name")
+
+names(cladeA_correlations)
+cladeA_correlations <- cladeA_correlations[,-c(1)]
+colnames(cladeA_correlations)
+colnames(cladeA_correlations)[1] <- "Host Rab7"
+colnames(cladeA_correlations)[5] <- "psaA"
+colnames(cladeA_correlations)[6] <- "psbB"
+colnames(cladeA_correlations)[7] <- "psbC"
+colnames(cladeA_correlations)[8] <- "High affinity nitrate transporter 2.5"
+colnames(cladeA_correlations)[9] <- "Superoxide dismutase"
+colnames(cladeA_correlations)[10] <- "Carbonic anhydrase"
+colnames(cladeA_correlations)[11] <- "Apoptosis-inducing factor 3"
+colnames(cladeA_correlations)[12] <- "Heat shock protein 70 "
+colnames(cladeA_correlations)[13] <- "Two pore calcium channel protein 1"
+colnames(cladeA_correlations)
+
+A = cor(cladeA_correlations)
+A.testRes = cor.mtest(cladeA_correlations, conf.level = 0.95)
+
+
+  corrplot(A,p.mat = A.testRes$p,
+         method = 'circle',
+         diag = FALSE,
+         type = 'upper',
+         sig.level = c(0.001,0.01,0.05),
+         pch.cex = 1,
+         insig = 'label_sig',
+         pch.col = 'white',
+         title = "Symbiodinium Correlations",
+         tl.col = "black",
+         tl.cex = 0.5,
+        # cl.ratio = 0.15,
+         tl.srt = 45,
+         colorRampPalette(c("#0571b0","#92c5de","white","#f4a582","#ca0020"))(200))
+)
+```
+
+### Clade B
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+coralShared_rlogs <- read.csv("treatment_rlog.csv",row.names = "X")
+colnames(coralShared_rlogs)[colnames(coralShared_rlogs)=="X"] <- "Entry"
+rab7 <- coralShared_rlogs[c("H9BW96"),]
+names(rab7)
+t_rab7 <- as.data.frame(t(rab7))
+t_rab7 <- tibble::rownames_to_column(t_rab7, "name")
+
+histology <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/histologyData.csv")
+names(histology)
+cladeB_histology <- histology[histology$dominant_genus == 'Breviolum',]
+cladeB_histology <- cladeB_histology[,c(3,7:9)]
+cladeB_histology
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeB/DESeq2/")
+cladeB_rlog <- read.csv("treatment_rlog.csv",row.names = "X")
+names(cladeB_rlog)
+curatedGenes <- cladeB_rlog[c("Q9XQV3","P49471","P49472","Q9LPV5","Q59094","Q5BCC5","Q96NN9","P11144","Q5QM84"),]
+t_rlogs <- as.data.frame(t(curatedGenes))
+t_rlogs <- tibble::rownames_to_column(t_rlogs, "name")
+cladeB_correlations <- merge(t_rab7,cladeB_histology,by="name")
+cladeB_correlations <- merge(cladeB_correlations,t_rlogs,by="name")
+
+names(cladeB_correlations)
+cladeB_correlations <- cladeB_correlations[,-c(1)]
+colnames(cladeB_correlations)
+colnames(cladeB_correlations)[1] <- "Host Rab7"
+colnames(cladeB_correlations)[5] <- "psaA"
+colnames(cladeB_correlations)[6] <- "psbB"
+colnames(cladeB_correlations)[7] <- "psbC"
+colnames(cladeB_correlations)[8] <- "High affinity nitrate transporter 2.5"
+colnames(cladeB_correlations)[9] <- "Superoxide dismutase"
+colnames(cladeB_correlations)[10] <- "Carbonic anhydrase"
+colnames(cladeB_correlations)[11] <- "Apoptosis-inducing factor 3"
+colnames(cladeB_correlations)[12] <- "Heat shock protein 70 "
+colnames(cladeB_correlations)[13] <- "Two pore calcium channel protein 1"
+colnames(cladeB_correlations)
+
+B = cor(cladeB_correlations)
+B.testRes = cor.mtest(cladeB_correlations, conf.level = 0.95)
+
+
+  corrplot(B,p.mat = B.testRes$p,
+         method = 'circle',
+         diag = FALSE,
+         type = 'upper',
+         sig.level = c(0.001,0.01,0.05),
+         pch.cex = 1,
+         insig = 'label_sig',
+         pch.col = 'white',
+         title = "Breviolum Correlations",
+         tl.col = "black",
+         tl.cex = 0.5,
+        # cl.ratio = 0.15,
+         tl.srt = 45,
+         colorRampPalette(c("#0571b0","#92c5de","white","#f4a582","#ca0020"))(200))
+
+```
+
+
+### Clade C
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+coralShared_rlogs <- read.csv("treatment_rlog.csv",row.names = "X")
+colnames(coralShared_rlogs)[colnames(coralShared_rlogs)=="X"] <- "Entry"
+rab7 <- coralShared_rlogs[c("H9BW96"),]
+names(rab7)
+t_rab7 <- as.data.frame(t(rab7))
+t_rab7 <- tibble::rownames_to_column(t_rab7, "name")
+
+histology <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/histologyData.csv")
+names(histology)
+cladeC_histology <- histology[histology$dominant_genus == 'Cladocopium',]
+cladeC_histology <- cladeC_histology[,c(3,7:9)]
+cladeC_histology
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeC/DESeq2/")
+cladeC_rlog <- read.csv("treatment_rlog.csv",row.names = "X")
+names(cladeC_rlog)
+curatedGenes <- cladeC_rlog[c("Q9XQV3","P49471","P49472","Q9LPV5","Q59094","Q5BCC5","Q96NN9","P11144","Q5QM84"),]
+t_rlogs <- as.data.frame(t(curatedGenes))
+t_rlogs <- tibble::rownames_to_column(t_rlogs, "name")
+cladeC_correlations <- merge(t_rab7,cladeC_histology,by="name")
+cladeC_correlations <- merge(cladeC_correlations,t_rlogs,by="name")
+
+names(cladeC_correlations)
+cladeC_correlations <- cladeC_correlations[,-c(1)]
+colnames(cladeC_correlations)
+colnames(cladeC_correlations)[1] <- "Host Rab7"
+colnames(cladeC_correlations)[5] <- "psaA"
+colnames(cladeC_correlations)[6] <- "psbB"
+colnames(cladeC_correlations)[7] <- "psbC"
+colnames(cladeC_correlations)[8] <- "High affinity nitrate transporter 2.5"
+colnames(cladeC_correlations)[9] <- "Superoxide dismutase"
+colnames(cladeC_correlations)[10] <- "Carbonic anhydrase"
+colnames(cladeC_correlations)[11] <- "Apoptosis-inducing factor 3"
+colnames(cladeC_correlations)[12] <- "Heat shock protein 70 "
+colnames(cladeC_correlations)[13] <- "Two pore calcium channel protein 1"
+colnames(cladeC_correlations)
+
+C = cor(cladeC_correlations)
+C.testRes = cor.mtest(cladeC_correlations, conf.level = 0.95)
+
+
+  corrplot(C,#p.mat = C.testRes$p,
+         method = 'circle',
+         diag = FALSE,
+         type = 'upper',
+         sig.level = c(0.001,0.01,0.05),
+         pch.cex = 1,
+         insig = 'label_sig',
+         pch.col = 'white',
+         title = "Breviolum Correlations",
+         tl.col = "black",
+         tl.cex = 0.5,
+        # cl.ratio = 0.15,
+         tl.srt = 45,
+         colorRampPalette(c("#0571b0","#92c5de","white","#f4a582","#ca0020"))(200))
+
+```
+
+### Clade D
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+coralShared_rlogs <- read.csv("treatment_rlog.csv",row.names = "X")
+colnames(coralShared_rlogs)[colnames(coralShared_rlogs)=="X"] <- "Entry"
+rab7 <- coralShared_rlogs[c("H9BW96"),]
+names(rab7)
+t_rab7 <- as.data.frame(t(rab7))
+t_rab7 <- tibble::rownames_to_column(t_rab7, "name")
+
+histology <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/histologyData.csv")
+names(histology)
+cladeD_histology <- histology[histology$dominant_genus == 'Durusdinium',]
+cladeD_histology <- cladeD_histology[,c(3,7:9)]
+cladeD_histology
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeD/DESeq2/")
+cladeD_rlog <- read.csv("treatment_rlog.csv",row.names = "X")
+names(cladeD_rlog)
+curatedGenes <- cladeD_rlog[c("Q9XQV3","P49471","P49472","Q9LPV5","Q59094","Q5BCC5","Q96NN9","P11144","Q5QM84"),]
+t_rlogs <- as.data.frame(t(curatedGenes))
+t_rlogs <- tibble::rownames_to_column(t_rlogs, "name")
+cladeD_correlations <- merge(t_rab7,cladeD_histology,by="name")
+cladeD_correlations <- merge(cladeD_correlations,t_rlogs,by="name")
+
+names(cladeD_correlations)
+cladeD_correlations <- cladeD_correlations[,-c(1)]
+colnames(cladeD_correlations)
+colnames(cladeD_correlations)[1] <- "Host Rab7"
+colnames(cladeD_correlations)[5] <- "psaA"
+colnames(cladeD_correlations)[6] <- "psbB"
+colnames(cladeD_correlations)[7] <- "psbC"
+colnames(cladeD_correlations)[8] <- "High affinity nitrate transporter 2.5"
+colnames(cladeD_correlations)[9] <- "Superoxide dismutase"
+colnames(cladeD_correlations)[10] <- "Carbonic anhydrase"
+colnames(cladeD_correlations)[11] <- "Apoptosis-inducing factor 3"
+colnames(cladeD_correlations)[12] <- "Heat shock protein 70 "
+colnames(cladeD_correlations)[13] <- "Two pore calcium channel protein 1"
+colnames(cladeD_correlations)
+
+D = cor(cladeD_correlations)
+D.testRes = cor.mtest(cladeD_correlations, conf.level = 0.95)
+
+
+  corrplot(D,#p.mat = D.testRes$p,
+         method = 'circle',
+         diag = FALSE,
+         type = 'upper',
+         sig.level = c(0.001,0.01,0.05),
+         pch.cex = 1,
+         insig = 'label_sig',
+         pch.col = 'white',
+         title = "Breviolum Correlations",
+         tl.col = "black",
+         tl.cex = 0.5,
+        # cl.ratio = 0.15,
+         tl.srt = 45,
+         colorRampPalette(c("#0571b0","#92c5de","white","#f4a582","#ca0020"))(200))
+```
+
