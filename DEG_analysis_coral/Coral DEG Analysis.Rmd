@@ -1,0 +1,2072 @@
+---
+title: "Coral DEG Analysis"
+author: "Kelsey Beavers"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    keep_md: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/")
+knitr::opts_chunk$set(dev='ragg_png')
+library(tximport)
+library(tibble)
+library(reshape2)
+library(DESeq2)
+library(dplyr)
+library(PCAtools)
+library(ggalt)
+library(ggplot2)
+library(lifecycle)
+library(ggvenn)
+library(stringr)
+library(ggpubr)
+library(utils)
+library(corrplot)
+library(repr) 
+library(data.table)
+library(dplyr)
+library(GOplot)
+```
+
+## Count Matrix Generation
+
+First we read in our raw counts from Salmon by Symbiodiniaceae genera and turn them into count matrices using Tximport.
+
+### C.natans
+
+Read in the raw counts all C.natans samples
+
+Cnat: c2, c3, c4, c6, c8, d2, d3, d4, d6, d8
+
+```{r,results='hide',tidy=TRUE}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/cnat/salmon")
+cnat_samples <- read.table("cnat_samples.csv", header = TRUE)
+cnat_files <- file.path(cnat_samples$sample, "quant.sf")
+names(cnat_files) <- paste0("sample", 1:10)
+all(file.exists(cnat_files))
+# Do not continue if output shows [FALSE]
+cnat_tx2gene <- read.csv("cnat_tx2gene.csv")
+cnat_txi <- tximport(cnat_files, type = 'salmon',tx2gene=cnat_tx2gene)
+dim(cnat_txi$counts)
+# 13,692 transcripts with evalue ≤ 1.00E-06
+
+cnat_counts <- cnat_txi$counts
+cnat_counts <- as.data.frame(cnat_counts)
+colnames(cnat_counts) <- c("cnat_c2","cnat_c3","cnat_c4","cnat_c6","cnat_c8","cnat_d2","cnat_d3","cnat_d4","cnat_d6","cnat_d8")
+cnat_counts <- tibble::rownames_to_column(cnat_counts,"Entry")
+cnat_counts[2:11] <-  round(cnat_counts[2:11], digits=0)
+cnat_counts <- as.data.frame(cnat_counts)
+write.csv(cnat_counts, file = "cnat_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### M.cavernosa
+
+Read in the raw counts for all M.cavernosa samples
+
+Mcav: c1, c3, c5, c6, c7, c8, d1, d2, d3, d4, d5, d6, d8
+
+```{r,results='hide',tidy=TRUE}
+setwd("./mcav/salmon")
+mcav_samples <- read.table("mcav_samples.csv", header = TRUE)
+mcav_files <- file.path(mcav_samples$sample, "quant.sf")
+names(mcav_files) <- paste0("sample", 1:13)
+all(file.exists(mcav_files))
+# Do not continue if output shows [FALSE]
+mcav_tx2gene <- read.csv("mcav_tx2gene.csv")
+mcav_txi <- tximport(mcav_files, type = 'salmon',tx2gene=mcav_tx2gene)
+dim(mcav_txi$counts)
+# 11,628 transcripts with evalue ≤ 1.00E-06
+
+mcav_counts <- mcav_txi$counts
+mcav_counts <- as.data.frame(mcav_counts)
+colnames(mcav_counts) <- c("mcav_c1","mcav_c3","mcav_c5","mcav_c6","mcav_c7","mcav_c8","mcav_d1","mcav_d2","mcav_d3","mcav_d4","mcav_d5","mcav_d6","mcav_d8")
+mcav_counts <- tibble::rownames_to_column(mcav_counts,"Entry")
+mcav_counts[2:14] <-  round(mcav_counts[2:14], digits=0)
+mcav_counts <- as.data.frame(mcav_counts)
+write.csv(mcav_counts, file = "mcav_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### O.annularis
+
+Read in the raw counts for all O.annularis samples
+
+Oann: c1, c2, c3, c6, c7, c8, d1, d3, d6, d7, d8
+
+```{r,results='hide',tidy=TRUE}
+setwd("./oann/salmon")
+oann_samples <- read.table("oann_samples.csv", header = TRUE)
+oann_files <- file.path(oann_samples$sample, "quant.sf")
+names(oann_files) <- paste0("sample", 1:11)
+all(file.exists(oann_files))
+# Do not continue if output shows [FALSE]
+
+oann_tx2gene <- read.csv("oann_tx2gene.csv")
+oann_txi <- tximport(oann_files, type = 'salmon',tx2gene=oann_tx2gene)
+dim(oann_txi$counts)
+# 13,138 transcripts with evalue ≤ 1.00E-06
+
+oann_counts <- oann_txi$counts
+oann_counts <- as.data.frame(oann_counts)
+colnames(oann_counts) <- c("oann_c1","oann_c2","oann_c3","oann_c6","oann_c7","oann_c8","oann_d1","oann_d3","oann_d6","oann_d7","oann_d8")
+oann_counts <- tibble::rownames_to_column(oann_counts,"Entry")
+oann_counts[2:12] <-  round(oann_counts[2:12], digits=0)
+oann_counts <- as.data.frame(oann_counts)
+write.csv(oann_counts, file = "oann_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### P.astreoides
+
+Read in the raw counts for all P.astreoides samples
+
+Past: c1, c5, c6, c7, d1, d2, d3, d4, d5, d6, d7
+
+```{r,results='hide',tidy=TRUE}
+setwd("./past/salmon/")
+past_samples <- read.table("past_samples.csv", header = TRUE)
+past_files <- file.path(past_samples$sample, "quant.sf")
+names(past_files) <- paste0("sample", 1:11)
+all(file.exists(past_files))
+# Do not continue if output shows [FALSE]
+
+past_tx2gene <- read.csv("past_tx2gene.csv")
+past_txi <- tximport(past_files, type = 'salmon',tx2gene=past_tx2gene)
+dim(past_txi$counts)
+# 13,271 transcripts with evalue ≤ 1.00E-06
+
+past_counts <- past_txi$counts
+past_counts <- as.data.frame(past_counts)
+colnames(past_counts) <- c("past_c1","past_c5","past_c6","past_c7","past_d1","past_d2","past_d3","past_d4","past_d5","past_d6","past_d7")
+past_counts <- tibble::rownames_to_column(past_counts,"Entry")
+past_counts[2:12] <-  round(past_counts[2:12], digits=0)
+past_counts <- as.data.frame(past_counts)
+write.csv(past_counts, file = "past_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### P.strigosa
+
+Read in the raw counts for all P.strigosa samples
+
+Pstr: c3, c5, c7, c8, d3, d5, d7, d8
+
+```{r,results='hide',tidy=TRUE}
+setwd("./pstr/salmon/")
+pstr_samples <- read.table("pstr_samples.csv", header = TRUE)
+pstr_files <- file.path(pstr_samples$sample, "quant.sf")
+names(pstr_files) <- paste0("sample", 1:8)
+all(file.exists(pstr_files))
+# Do not continue if output shows [FALSE]
+
+pstr_tx2gene <- read.csv("pstr_tx2gene.csv")
+pstr_txi <- tximport(pstr_files, type = 'salmon',tx2gene=pstr_tx2gene)
+dim(pstr_txi$counts)
+# 9,796 transcripts with evalue ≤ 1.00E-06
+
+pstr_counts <- pstr_txi$counts
+pstr_counts <- as.data.frame(pstr_counts)
+colnames(pstr_counts) <- c("pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7","pstr_d8")
+pstr_counts <- tibble::rownames_to_column(pstr_counts,"Entry")
+pstr_counts[2:9] <-  round(pstr_counts[2:9], digits=0)
+pstr_counts <- as.data.frame(pstr_counts)
+write.csv(pstr_counts, file = "pstr_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+## Expression Matrix Generation
+
+Next we run each genera's count matrix through DESeq2 to obtain rlog normalized expression matrices and determine significantly differentially expressed genes (DEGs)
+
+### C.natans Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+cnat_countData <- read.csv("./cnat/salmon/cnat_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+cnatColData <- colData[colData$species == 'cnat',]
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for the effect of genotype.
+dds <- DESeqDataSetFromMatrix(countData = cnat_countData, 
+                                        colData = cnatColData, 
+                                        design = ~genotype + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+cnat_res <- as.data.frame(res[order(res$padj),])
+write.csv(cnat_res, file = "./cnat/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+cnat_rlogs <- as.data.frame(assay(rld))
+write.csv(cnat_rlogs, file = "./cnat/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- cnat_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./cnat/DESeq2/treatment_sig_DEGs.csv")  
+# 1350 DEGs
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Symbiodinium PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(cnat_rlogs, metadata = cnatColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+cnatPCA <- 
+  biplot(p,
+       lab = NULL,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-500,500), ylim = c(-250,150),
+       title = 'C.natans Gene Expression PCA',
+       titleLabSize = 16,
+       legendPosition = 'right') 
+cnatPCA
+```
+
+No outliers detected in the C.natans samples (although there is huge separation... will investigate this later).
+
+### M.cavernosa Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+mcav_countData <- read.csv("./mcav/salmon/mcav_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+mcavColData <- colData[colData$species == 'mcav',]
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for the effect of genotype.
+dds <- DESeqDataSetFromMatrix(countData = mcav_countData, 
+                                        colData = mcavColData, 
+                                        design = ~genotype + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+mcav_res <- as.data.frame(res[order(res$padj),])
+write.csv(mcav_res, file = "./mcav/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+mcav_rlogs <- as.data.frame(assay(rld))
+write.csv(mcav_rlogs, file = "./mcav/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- mcav_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./mcav/DESeq2/treatment_sig_DEGs.csv")  
+# 385 DEGs
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Symbiodinium PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(mcav_rlogs, metadata = mcavColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+mcavPCA <- 
+  biplot(p,
+       lab = NULL,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-100,75), ylim = c(-60,70),
+       title = 'M.cavernosa Gene Expression PCA',
+       titleLabSize = 16,
+       legendPosition = 'right') 
+mcavPCA
+```
+
+No outliers detected in the M.cavernosa samples.
+
+### O.annularis Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+oann_countData <- read.csv("./oann/salmon/oann_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+oannColData <- colData[colData$species == 'oann',]
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for the effect of genotype.
+dds <- DESeqDataSetFromMatrix(countData = oann_countData, 
+                                        colData = oannColData, 
+                                        design = ~genotype + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+oann_res <- as.data.frame(res[order(res$padj),])
+write.csv(oann_res, file = "./oann/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+oann_rlogs <- as.data.frame(assay(rld))
+write.csv(oann_rlogs, file = "./oann/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- oann_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./oann/DESeq2/treatment_sig_DEGs.csv")  
+# 229 DEGs
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Symbiodinium PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(oann_rlogs, metadata = oannColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+oannPCA <- 
+  biplot(p,
+       lab = NULL,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-80,110), ylim = c(-90,90),
+       title = 'O.annularis Gene Expression PCA',
+       titleLabSize = 16,
+       legendPosition = 'right') 
+oannPCA
+```
+
+No outliers detected in the O.annularis samples.
+
+### P.astreoides Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+past_countData <- read.csv("./past/salmon/past_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+pastColData <- colData[colData$species == 'past',]
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for the effect of genotype.
+dds <- DESeqDataSetFromMatrix(countData = past_countData, 
+                                        colData = pastColData, 
+                                        design = ~genotype + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+past_res <- as.data.frame(res[order(res$padj),])
+write.csv(past_res, file = "./past/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+past_rlogs <- as.data.frame(assay(rld))
+write.csv(past_rlogs, file = "./past/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- past_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./past/DESeq2/treatment_sig_DEGs.csv")  
+# 42 DEGs
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Symbiodinium PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(past_rlogs, metadata = pastColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+pastPCA <- 
+  biplot(p,
+       lab = NULL,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-150,150), ylim = c(-150,120),
+       title = 'P.astreoides Gene Expression PCA',
+       titleLabSize = 16,
+       legendPosition = 'right') 
+pastPCA
+```
+
+No outliers detected in the P.astreoides samples.
+
+### P.strigosa Gene Expression
+
+```{r,results='hide',tidy=TRUE}
+pstr_countData <- read.csv("./pstr/salmon/pstr_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+pstrColData <- colData[colData$species == 'pstr',]
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for the effect of genotype.
+dds <- DESeqDataSetFromMatrix(countData = pstr_countData, 
+                                        colData = pstrColData, 
+                                        design = ~genotype + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+pstr_res <- as.data.frame(res[order(res$padj),])
+write.csv(pstr_res, file = "./pstr/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+pstr_rlogs <- as.data.frame(assay(rld))
+write.csv(pstr_rlogs, file = "./pstr/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- pstr_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./pstr/DESeq2/treatment_sig_DEGs.csv")  
+# 298 DEGs
+```
+
+#### Checkpoint: Any Outliers?
+
+Perform a principal component analysis (PCA) to check for outliers
+
+```{r Symbiodinium PCA,fig.height=4,fig.width=6,dpi=200,message=FALSE,tidy=TRUE}
+p <- pca(pstr_rlogs, metadata = pstrColData,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+pstrPCA <- 
+  biplot(p,
+       #lab = NULL,
+       colby = "treatment", colkey = c('control'='steelblue3','disease' = 'red'), colLegendTitle = 'Treatment',
+       ellipse = TRUE,
+       xlim=c(-400,430), ylim = c(-260,260),
+       title = 'P.strigosa Gene Expression PCA',
+       titleLabSize = 16,
+       max.overlaps = 1,
+       legendPosition = 'right') 
+pstrPCA
+```
+
+Pstr_d8 is an outlier. We should remove it. 
+
+#### Count Matrix Generation (outlier removed)
+
+Read in the raw counts for all P.strigosa samples
+
+Pstr: c3, c5, c7, c8, d3, d5, d7, *d8 - remove!*
+
+```{r,results='hide',tidy=TRUE}
+setwd("./pstr/salmon/")
+pstr_samples <- read.table("pstr_samples_outlier_removed.csv", header = TRUE)
+pstr_files <- file.path(pstr_samples$sample, "quant.sf")
+names(pstr_files) <- paste0("sample", 1:7)
+all(file.exists(pstr_files))
+# Do not continue if output shows [FALSE]
+
+pstr_tx2gene <- read.csv("pstr_tx2gene.csv")
+pstr_txi <- tximport(pstr_files, type = 'salmon',tx2gene=pstr_tx2gene)
+dim(pstr_txi$counts)
+# 9,796 transcripts with evalue ≤ 1.00E-06
+
+pstr_counts <- pstr_txi$counts
+pstr_counts <- as.data.frame(pstr_counts)
+colnames(pstr_counts) <- c("pstr_c3","pstr_c5","pstr_c7","pstr_c8","pstr_d3","pstr_d5","pstr_d7")
+pstr_counts <- tibble::rownames_to_column(pstr_counts,"Entry")
+pstr_counts[2:8] <-  round(pstr_counts[2:8], digits=0)
+pstr_counts <- as.data.frame(pstr_counts)
+write.csv(pstr_counts, file = "pstr_counts.csv",quote = FALSE,row.names = FALSE)
+```
+
+### P.strigosa Gene Expression (outlier removed)
+
+```{r,results='hide',tidy=TRUE}
+pstr_countData <- read.csv("./pstr/salmon/pstr_counts.csv", row.names="Entry")
+colData <- read.csv("./../metaData.csv", row.names = "name")
+pstrColData <- colData[colData$species == 'pstr',]
+# Remove pstr_d8
+pstrColData <- pstrColData[-c(8),]
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for the effect of genotype.
+dds <- DESeqDataSetFromMatrix(countData = pstr_countData, 
+                                        colData = pstrColData, 
+                                        design = ~genotype + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+pstr_res <- as.data.frame(res[order(res$padj),])
+write.csv(pstr_res, file = "./pstr/DESeq2/DESeq_treatment.csv")
+
+rld <- rlog(dds, blind=FALSE) 
+pstr_rlogs <- as.data.frame(assay(rld))
+write.csv(pstr_rlogs, file = "./pstr/DESeq2/treatment_rlog.csv")  
+
+# Keep significant DEGs (padj < 0.05)
+DEGs <- pstr_res %>% filter(padj < 0.05)
+write.csv(DEGs, file = "./pstr/DESeq2/treatment_sig_DEGs.csv")  
+# 90 DEGs
+```
+
+## Gene Ontology Enrichment
+
+Perform Gene Ontology enrichment on each species using the package GO_MWU. 
+
+Input = two columns of comma-separated values: Uniprot Entry ID and log2FoldChange for all genes from each species (DESeq_treatment.csv)
+
+goAnnotations = two-column (Entry ID, GO terms) table of GO annotations for my sequences, tab-delimited, one line per genes, multiple GO terms separated by semicolon
+
+goDatabase = [GO hierarchy file](http://www.geneontology.org/GO.downloads.ontology.shtml)
+
+Make sure all of these files (along with gomwu_a.pl, gomwu_b.pl, and gomwu.functions.R) are in the same directory.
+
+### C.natans
+#### Biological Process
+```{r}
+getwd()
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/")
+cnat_input <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/cnat/DESeq2/DESeq_treatment.csv")
+colnames(cnat_input)[colnames(cnat_input)=="X"] <- "Entry"
+cnat_input <- cnat_input[,c(1,3)]
+write.csv(cnat_input,file="~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/cnat_input.csv",row.names = FALSE,quote = FALSE)
+
+# Edit these to match your data file names: 
+input="cnat_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="BP" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r cnat_BP_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat")
+cnat_BP_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.01, 
+                  level2=0.001, 
+                  level3=0.0001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+#### Molecular Function
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat")
+
+# Edit these to match your data file names: 
+input="cnat_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="MF" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r cnat_MF_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat")
+cnat_MF_results=gomwuPlot(input,goAnnotations,goDivision,
+                          absValue=1,
+                          level1=0.01, 
+                          level2=0.001, 
+                          level3=0.0001,
+                          txtsize=1.1,
+                          treeHeight=0.5,
+)
+```
+#### Cellular Component
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat")
+
+# Edit these to match your data file names: 
+input="cnat_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="CC" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r cnat_CC_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat")
+cnat_CC_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.01, 
+                  level2=0.001, 
+                  level3=0.0001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+### M.cavernosa
+
+#### Biological Process
+
+```{r}
+getwd()
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/")
+mcav_input <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/mcav/DESeq2/DESeq_treatment.csv")
+colnames(mcav_input)[colnames(mcav_input)=="X"] <- "Entry"
+mcav_input <- mcav_input[,c(1,3)]
+write.csv(mcav_input,file="~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/mcav_input.csv",row.names = FALSE,quote = FALSE)
+
+# Edit these to match your data file names: 
+input="mcav_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="BP" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r mcav_BP_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav")
+source("gomwu.functions.R")
+mcav_BP_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.01, 
+                  level2=0.001, 
+                  level3=0.0001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+mcav_BP_results
+```
+
+#### Molecular Function
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav")
+
+# Edit these to match your data file names: 
+input="mcav_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="MF" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r mcav_MF_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav")
+mcav_MF_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.01, 
+                  level2=0.001, 
+                  level3=0.0001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+#### Cellular Component
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav")
+
+# Edit these to match your data file names: 
+input="mcav_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="CC" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r mcav_CC_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav")
+mcav_CC_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.01, 
+                  level2=0.001, 
+                  level3=0.0001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+
+
+
+### O.annularis
+
+#### Biological Process
+
+```{r}
+getwd()
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/")
+oann_input <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/oann/DESeq2/DESeq_treatment.csv")
+colnames(oann_input)[colnames(oann_input)=="X"] <- "Entry"
+oann_input <- oann_input[,c(1,3)]
+write.csv(oann_input,file="~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/oann_input.csv",row.names = FALSE,quote = FALSE)
+
+# Edit these to match your data file names: 
+input="oann_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="BP" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r oann_BP_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann")
+oann_BP_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.001, 
+                  level2=0.0001, 
+                  level3=0.00001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+#### Molecular Function
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann")
+
+# Edit these to match your data file names: 
+input="oann_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="MF" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r oann_MF_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann")
+oann_MF_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.001, 
+                  level2=0.0001, 
+                  level3=0.00001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+#### Cellular Component
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann")
+
+# Edit these to match your data file names: 
+input="oann_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="CC" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r oann_CC_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann")
+oann_CC_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.001, 
+                  level2=0.0001, 
+                  level3=0.00001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+
+### P.astreoides
+
+#### Biological Process
+
+```{r}
+getwd()
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/")
+past_input <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/past/DESeq2/DESeq_treatment.csv")
+colnames(past_input)[colnames(past_input)=="X"] <- "Entry"
+past_input <- past_input[,c(1,3)]
+write.csv(past_input,file="~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/past_input.csv",row.names = FALSE,quote = FALSE)
+
+# Edit these to match your data file names: 
+input="past_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="BP" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r past_BP_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past")
+past_BP_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.00001, 
+                  level2=0.000001, 
+                  level3=0.0000001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+#### Molecular Function
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past")
+
+# Edit these to match your data file names: 
+input="past_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="MF" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r oann_MF_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past")
+past_MF_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.00001, 
+                  level2=0.000001, 
+                  level3=0.0000001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+#### Cellular Component
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past")
+
+# Edit these to match your data file names: 
+input="past_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="CC" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r past_CC_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past")
+past_CC_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.00001, 
+                  level2=0.000001, 
+                  level3=0.0000001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+
+
+
+### P.strigosa
+
+#### Biological Process
+
+```{r}
+getwd()
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/")
+pstr_input <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/pstr/DESeq2/DESeq_treatment.csv")
+colnames(pstr_input)[colnames(pstr_input)=="X"] <- "Entry"
+pstr_input <- pstr_input[,c(1,3)]
+write.csv(pstr_input,file="~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/pstr_input.csv",row.names = FALSE,quote = FALSE)
+
+# Edit these to match your data file names: 
+input="pstr_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="BP" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r pstr_BP_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr")
+pstr_BP_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.01, 
+                  level2=0.001, 
+                  level3=0.0001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+#### Molecular Function
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr")
+
+# Edit these to match your data file names: 
+input="pstr_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="MF" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r pstr_MF_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr")
+pstr_MF_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.01, 
+                  level2=0.001, 
+                  level3=0.0001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+#### Cellular Component
+
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr")
+
+# Edit these to match your data file names: 
+input="pstr_input.csv" 
+goAnnotations="goAnnotations.txt"
+goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDivision="CC" # either MF, or BP, or CC
+source("gomwu.functions.R")
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision,
+           perlPath="perl", # replace with full path to perl executable if it is not in your system's PATH already
+           largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+           smallest=5,   # a GO category should contain at least this many genes to be considered
+           clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+           #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+           #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+           	#Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
+
+# do not continue if the printout shows that no GO terms pass 10% FDR.
+```
+
+Plot the results 
+```{r pstr_CC_dendrogram,fig.height=2.5,fig.width=4,dpi=200}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr")
+pstr_CC_results=gomwuPlot(input,goAnnotations,goDivision,
+                  absValue=1,
+                  level1=0.01, 
+                  level2=0.001, 
+                  level3=0.0001,
+                  txtsize=1.1,
+                  treeHeight=0.5,
+)
+```
+
+## Visualize the GO Term Enrichment
+### Set Up
+
+We will use the GOplot package to set up our GO_MWU results for pretty visualization. We use the GOPlot function "reduce_overlap" to find the top 5 most significant, non-redundant GO terms.
+
+*NOTE* in order to use the function "reduce_overlap", we must create a circ object using the function "circle_dat". "Circle_dat" will generate a "zscore" column, but we already have a more powerful statistic from GO_MWU: delta rank. We will replace the zscores with our delta rank values.
+
+#### C. natans - BP
+
+```{r}
+cnat_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/MWU_BP_cnat_input.csv",header = TRUE)
+cnat_BP_MWU <- as.data.frame(cnat_BP_MWU)
+cnat_BP_MWU <- cnat_BP_MWU[,-c(2,3)]
+cnat_BP_MWU$Category <- "BP"
+
+cnat_BP_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/BP_cnat_input.csv",header = TRUE)
+cnat_BP_input <- as.data.frame(cnat_BP_input[,-c(3,5)])
+cnat_BP_input <- as.data.table(cnat_BP_input)[, toString(seq), by=list(name,term)]
+cnat_GOMWU_BP <- merge(cnat_BP_input,cnat_BP_MWU,by="name")
+
+colnames(cnat_GOMWU_BP)[1] = "term"
+colnames(cnat_GOMWU_BP)[2] = "ID"
+colnames(cnat_GOMWU_BP)[3] = "genes"
+colnames(cnat_GOMWU_BP)[5] = "count"
+cnat_GOMWU_BP <- cnat_GOMWU_BP[,-c(6)]
+colnames(cnat_GOMWU_BP)[6] = "adj_pval"
+cnat_GOMWU_BP <- cnat_GOMWU_BP[, c(7, 2, 1, 3, 6, 4 )]
+
+
+cnat_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/cnat/DESeq2/DESeq_treatment.csv")
+colnames(cnat_DESeq)[colnames(cnat_DESeq)=="X"] <- "Entry"
+cnat_DESeq <- cnat_DESeq[,-c(4)]
+colnames(cnat_DESeq)[1] = "ID"
+colnames(cnat_DESeq)[2] = "AveExpr"
+colnames(cnat_DESeq)[3] = "logFC"
+colnames(cnat_DESeq)[4] = "t"
+colnames(cnat_DESeq)[5] = "P.Value"
+colnames(cnat_DESeq)[6] = "adj.P.Value"
+cnat_DESeq <- cnat_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(cnat_GOMWU_BP,cnat_DESeq)
+deltaRank <- cnat_GOMWU_BP[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+cnat_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+cnat_BP_reduced_circ <- reduce_overlap(cnat_circ_sig, overlap = 0.75)
+```
+
+#### C. natans - MF
+
+```{r}
+cnat_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/MWU_MF_cnat_input.csv",header = TRUE)
+cnat_MF_MWU <- as.data.frame(cnat_MF_MWU)
+cnat_MF_MWU <- cnat_MF_MWU[,-c(2,3)]
+cnat_MF_MWU$Category <- "MF"
+
+cnat_MF_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/MF_cnat_input.csv",header = TRUE)
+cnat_MF_input <- as.data.frame(cnat_MF_input[,-c(3,5)])
+cnat_MF_input <- as.data.table(cnat_MF_input)[, toString(seq), by=list(name,term)]
+cnat_GOMWU_MF <- merge(cnat_MF_input,cnat_MF_MWU,by="name")
+
+colnames(cnat_GOMWU_MF)[1] = "term"
+colnames(cnat_GOMWU_MF)[2] = "ID"
+colnames(cnat_GOMWU_MF)[3] = "genes"
+colnames(cnat_GOMWU_MF)[5] = "count"
+cnat_GOMWU_MF <- cnat_GOMWU_MF[,-c(6)]
+colnames(cnat_GOMWU_MF)[6] = "adj_pval"
+cnat_GOMWU_MF <- cnat_GOMWU_MF[, c(7, 2, 1, 3, 6, 4 )]
+
+
+cnat_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/cnat/DESeq2/DESeq_treatment.csv")
+colnames(cnat_DESeq)[colnames(cnat_DESeq)=="X"] <- "Entry"
+cnat_DESeq <- cnat_DESeq[,-c(4)]
+colnames(cnat_DESeq)[1] = "ID"
+colnames(cnat_DESeq)[2] = "AveExpr"
+colnames(cnat_DESeq)[3] = "logFC"
+colnames(cnat_DESeq)[4] = "t"
+colnames(cnat_DESeq)[5] = "P.Value"
+colnames(cnat_DESeq)[6] = "adj.P.Value"
+cnat_DESeq <- cnat_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(cnat_GOMWU_MF,cnat_DESeq)
+deltaRank <- cnat_GOMWU_MF[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+cnat_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+cnat_MF_reduced_circ <- reduce_overlap(cnat_circ_sig, overlap = 0.75)
+```
+
+#### M. cavernosa - BP
+
+```{r}
+mcav_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/MWU_BP_mcav_input.csv",header = TRUE)
+mcav_BP_MWU <- as.data.frame(mcav_BP_MWU)
+mcav_BP_MWU <- mcav_BP_MWU[,-c(2,3)]
+mcav_BP_MWU$Category <- "BP"
+
+mcav_BP_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/BP_mcav_input.csv",header = TRUE)
+mcav_BP_input <- as.data.frame(mcav_BP_input[,-c(3,5)])
+mcav_BP_input <- as.data.table(mcav_BP_input)[, toString(seq), by=list(name,term)]
+mcav_GOMWU_BP <- merge(mcav_BP_input,mcav_BP_MWU,by="name")
+
+colnames(mcav_GOMWU_BP)[1] = "term"
+colnames(mcav_GOMWU_BP)[2] = "ID"
+colnames(mcav_GOMWU_BP)[3] = "genes"
+colnames(mcav_GOMWU_BP)[5] = "count"
+mcav_GOMWU_BP <- mcav_GOMWU_BP[,-c(6)]
+colnames(mcav_GOMWU_BP)[6] = "adj_pval"
+mcav_GOMWU_BP <- mcav_GOMWU_BP[, c(7, 2, 1, 3, 6, 4 )]
+
+
+mcav_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/mcav/DESeq2/DESeq_treatment.csv")
+colnames(mcav_DESeq)[colnames(mcav_DESeq)=="X"] <- "Entry"
+mcav_DESeq <- mcav_DESeq[,-c(4)]
+colnames(mcav_DESeq)[1] = "ID"
+colnames(mcav_DESeq)[2] = "AveExpr"
+colnames(mcav_DESeq)[3] = "logFC"
+colnames(mcav_DESeq)[4] = "t"
+colnames(mcav_DESeq)[5] = "P.Value"
+colnames(mcav_DESeq)[6] = "adj.P.Value"
+mcav_DESeq <- mcav_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(mcav_GOMWU_BP,mcav_DESeq)
+deltaRank <- mcav_GOMWU_BP[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+mcav_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+mcav_BP_reduced_circ <- reduce_overlap(mcav_circ_sig, overlap = 0.75)
+```
+
+#### M. cavernosa - MF
+
+```{r}
+mcav_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/MWU_MF_mcav_input.csv",header = TRUE)
+mcav_MF_MWU <- as.data.frame(mcav_MF_MWU)
+mcav_MF_MWU <- mcav_MF_MWU[,-c(2,3)]
+mcav_MF_MWU$Category <- "MF"
+
+mcav_MF_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/MF_mcav_input.csv",header = TRUE)
+mcav_MF_input <- as.data.frame(mcav_MF_input[,-c(3,5)])
+mcav_MF_input <- as.data.table(mcav_MF_input)[, toString(seq), by=list(name,term)]
+mcav_GOMWU_MF <- merge(mcav_MF_input,mcav_MF_MWU,by="name")
+
+colnames(mcav_GOMWU_MF)[1] = "term"
+colnames(mcav_GOMWU_MF)[2] = "ID"
+colnames(mcav_GOMWU_MF)[3] = "genes"
+colnames(mcav_GOMWU_MF)[5] = "count"
+mcav_GOMWU_MF <- mcav_GOMWU_MF[,-c(6)]
+colnames(mcav_GOMWU_MF)[6] = "adj_pval"
+mcav_GOMWU_MF <- mcav_GOMWU_MF[, c(7, 2, 1, 3, 6, 4 )]
+
+
+mcav_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/mcav/DESeq2/DESeq_treatment.csv")
+colnames(mcav_DESeq)[colnames(mcav_DESeq)=="X"] <- "Entry"
+mcav_DESeq <- mcav_DESeq[,-c(4)]
+colnames(mcav_DESeq)[1] = "ID"
+colnames(mcav_DESeq)[2] = "AveExpr"
+colnames(mcav_DESeq)[3] = "logFC"
+colnames(mcav_DESeq)[4] = "t"
+colnames(mcav_DESeq)[5] = "P.Value"
+colnames(mcav_DESeq)[6] = "adj.P.Value"
+mcav_DESeq <- mcav_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(mcav_GOMWU_MF,mcav_DESeq)
+deltaRank <- mcav_GOMWU_MF[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+mcav_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+mcav_MF_reduced_circ <- reduce_overlap(mcav_circ_sig, overlap = 0.75)
+```
+
+#### O. annularis - BP
+
+```{r}
+oann_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/MWU_BP_oann_input.csv",header = TRUE)
+oann_BP_MWU <- as.data.frame(oann_BP_MWU)
+oann_BP_MWU <- oann_BP_MWU[,-c(2,3)]
+oann_BP_MWU$Category <- "BP"
+
+oann_BP_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/BP_oann_input.csv",header = TRUE)
+oann_BP_input <- as.data.frame(oann_BP_input[,-c(3,5)])
+oann_BP_input <- as.data.table(oann_BP_input)[, toString(seq), by=list(name,term)]
+oann_GOMWU_BP <- merge(oann_BP_input,oann_BP_MWU,by="name")
+
+colnames(oann_GOMWU_BP)[1] = "term"
+colnames(oann_GOMWU_BP)[2] = "ID"
+colnames(oann_GOMWU_BP)[3] = "genes"
+colnames(oann_GOMWU_BP)[5] = "count"
+oann_GOMWU_BP <- oann_GOMWU_BP[,-c(6)]
+colnames(oann_GOMWU_BP)[6] = "adj_pval"
+oann_GOMWU_BP <- oann_GOMWU_BP[, c(7, 2, 1, 3, 6, 4 )]
+
+
+oann_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/oann/DESeq2/DESeq_treatment.csv")
+colnames(oann_DESeq)[colnames(oann_DESeq)=="X"] <- "Entry"
+oann_DESeq <- oann_DESeq[,-c(4)]
+colnames(oann_DESeq)[1] = "ID"
+colnames(oann_DESeq)[2] = "AveExpr"
+colnames(oann_DESeq)[3] = "logFC"
+colnames(oann_DESeq)[4] = "t"
+colnames(oann_DESeq)[5] = "P.Value"
+colnames(oann_DESeq)[6] = "adj.P.Value"
+oann_DESeq <- oann_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(oann_GOMWU_BP,oann_DESeq)
+deltaRank <- oann_GOMWU_BP[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+oann_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+oann_BP_reduced_circ <- reduce_overlap(oann_circ_sig, overlap = 0.75)
+```
+
+#### O. annularis - MF
+
+```{r}
+oann_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/MWU_MF_oann_input.csv",header = TRUE)
+oann_MF_MWU <- as.data.frame(oann_MF_MWU)
+oann_MF_MWU <- oann_MF_MWU[,-c(2,3)]
+oann_MF_MWU$Category <- "MF"
+
+oann_MF_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/MF_oann_input.csv",header = TRUE)
+oann_MF_input <- as.data.frame(oann_MF_input[,-c(3,5)])
+oann_MF_input <- as.data.table(oann_MF_input)[, toString(seq), by=list(name,term)]
+oann_GOMWU_MF <- merge(oann_MF_input,oann_MF_MWU,by="name")
+
+colnames(oann_GOMWU_MF)[1] = "term"
+colnames(oann_GOMWU_MF)[2] = "ID"
+colnames(oann_GOMWU_MF)[3] = "genes"
+colnames(oann_GOMWU_MF)[5] = "count"
+oann_GOMWU_MF <- oann_GOMWU_MF[,-c(6)]
+colnames(oann_GOMWU_MF)[6] = "adj_pval"
+oann_GOMWU_MF <- oann_GOMWU_MF[, c(7, 2, 1, 3, 6, 4 )]
+
+
+oann_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/oann/DESeq2/DESeq_treatment.csv")
+colnames(oann_DESeq)[colnames(oann_DESeq)=="X"] <- "Entry"
+oann_DESeq <- oann_DESeq[,-c(4)]
+colnames(oann_DESeq)[1] = "ID"
+colnames(oann_DESeq)[2] = "AveExpr"
+colnames(oann_DESeq)[3] = "logFC"
+colnames(oann_DESeq)[4] = "t"
+colnames(oann_DESeq)[5] = "P.Value"
+colnames(oann_DESeq)[6] = "adj.P.Value"
+oann_DESeq <- oann_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(oann_GOMWU_MF,oann_DESeq)
+deltaRank <- oann_GOMWU_MF[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+oann_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+oann_MF_reduced_circ <- reduce_overlap(oann_circ_sig, overlap = 0.75)
+```
+
+#### P. astreoides - BP
+
+```{r}
+past_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/MWU_BP_past_input.csv",header = TRUE)
+past_BP_MWU <- as.data.frame(past_BP_MWU)
+past_BP_MWU <- past_BP_MWU[,-c(2,3)]
+past_BP_MWU$Category <- "BP"
+
+past_BP_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/BP_past_input.csv",header = TRUE)
+past_BP_input <- as.data.frame(past_BP_input[,-c(3,5)])
+past_BP_input <- as.data.table(past_BP_input)[, toString(seq), by=list(name,term)]
+past_GOMWU_BP <- merge(past_BP_input,past_BP_MWU,by="name")
+
+colnames(past_GOMWU_BP)[1] = "term"
+colnames(past_GOMWU_BP)[2] = "ID"
+colnames(past_GOMWU_BP)[3] = "genes"
+colnames(past_GOMWU_BP)[5] = "count"
+past_GOMWU_BP <- past_GOMWU_BP[,-c(6)]
+colnames(past_GOMWU_BP)[6] = "adj_pval"
+past_GOMWU_BP <- past_GOMWU_BP[, c(7, 2, 1, 3, 6, 4 )]
+
+
+past_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/past/DESeq2/DESeq_treatment.csv")
+colnames(past_DESeq)[colnames(past_DESeq)=="X"] <- "Entry"
+past_DESeq <- past_DESeq[,-c(4)]
+colnames(past_DESeq)[1] = "ID"
+colnames(past_DESeq)[2] = "AveExpr"
+colnames(past_DESeq)[3] = "logFC"
+colnames(past_DESeq)[4] = "t"
+colnames(past_DESeq)[5] = "P.Value"
+colnames(past_DESeq)[6] = "adj.P.Value"
+past_DESeq <- past_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(past_GOMWU_BP,past_DESeq)
+deltaRank <- past_GOMWU_BP[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+past_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+past_BP_reduced_circ <- reduce_overlap(past_circ_sig, overlap = 0.75)
+```
+
+#### P. astreoides - MF
+
+```{r}
+past_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/MWU_MF_past_input.csv",header = TRUE)
+past_MF_MWU <- as.data.frame(past_MF_MWU)
+past_MF_MWU <- past_MF_MWU[,-c(2,3)]
+past_MF_MWU$Category <- "MF"
+
+past_MF_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/MF_past_input.csv",header = TRUE)
+past_MF_input <- as.data.frame(past_MF_input[,-c(3,5)])
+past_MF_input <- as.data.table(past_MF_input)[, toString(seq), by=list(name,term)]
+past_GOMWU_MF <- merge(past_MF_input,past_MF_MWU,by="name")
+
+colnames(past_GOMWU_MF)[1] = "term"
+colnames(past_GOMWU_MF)[2] = "ID"
+colnames(past_GOMWU_MF)[3] = "genes"
+colnames(past_GOMWU_MF)[5] = "count"
+past_GOMWU_MF <- past_GOMWU_MF[,-c(6)]
+colnames(past_GOMWU_MF)[6] = "adj_pval"
+past_GOMWU_MF <- past_GOMWU_MF[, c(7, 2, 1, 3, 6, 4 )]
+
+
+past_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/past/DESeq2/DESeq_treatment.csv")
+colnames(past_DESeq)[colnames(past_DESeq)=="X"] <- "Entry"
+past_DESeq <- past_DESeq[,-c(4)]
+colnames(past_DESeq)[1] = "ID"
+colnames(past_DESeq)[2] = "AveExpr"
+colnames(past_DESeq)[3] = "logFC"
+colnames(past_DESeq)[4] = "t"
+colnames(past_DESeq)[5] = "P.Value"
+colnames(past_DESeq)[6] = "adj.P.Value"
+past_DESeq <- past_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(past_GOMWU_MF,past_DESeq)
+deltaRank <- past_GOMWU_MF[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+past_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+past_MF_reduced_circ <- reduce_overlap(past_circ_sig, overlap = 0.75)
+```
+
+#### P. strigosa - BP
+
+```{r}
+pstr_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/MWU_BP_pstr_input.csv",header = TRUE)
+pstr_BP_MWU <- as.data.frame(pstr_BP_MWU)
+pstr_BP_MWU <- pstr_BP_MWU[,-c(2,3)]
+pstr_BP_MWU$Category <- "BP"
+
+pstr_BP_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/BP_pstr_input.csv",header = TRUE)
+pstr_BP_input <- as.data.frame(pstr_BP_input[,-c(3,5)])
+pstr_BP_input <- as.data.table(pstr_BP_input)[, toString(seq), by=list(name,term)]
+pstr_GOMWU_BP <- merge(pstr_BP_input,pstr_BP_MWU,by="name")
+
+colnames(pstr_GOMWU_BP)[1] = "term"
+colnames(pstr_GOMWU_BP)[2] = "ID"
+colnames(pstr_GOMWU_BP)[3] = "genes"
+colnames(pstr_GOMWU_BP)[5] = "count"
+pstr_GOMWU_BP <- pstr_GOMWU_BP[,-c(6)]
+colnames(pstr_GOMWU_BP)[6] = "adj_pval"
+pstr_GOMWU_BP <- pstr_GOMWU_BP[, c(7, 2, 1, 3, 6, 4 )]
+
+
+pstr_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/pstr/DESeq2/DESeq_treatment.csv")
+colnames(pstr_DESeq)[colnames(pstr_DESeq)=="X"] <- "Entry"
+pstr_DESeq <- pstr_DESeq[,-c(4)]
+colnames(pstr_DESeq)[1] = "ID"
+colnames(pstr_DESeq)[2] = "AveExpr"
+colnames(pstr_DESeq)[3] = "logFC"
+colnames(pstr_DESeq)[4] = "t"
+colnames(pstr_DESeq)[5] = "P.Value"
+colnames(pstr_DESeq)[6] = "adj.P.Value"
+pstr_DESeq <- pstr_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(pstr_GOMWU_BP,pstr_DESeq)
+deltaRank <- pstr_GOMWU_BP[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+pstr_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+pstr_BP_reduced_circ <- reduce_overlap(pstr_circ_sig, overlap = 0.75)
+```
+
+#### P. strigosa - MF
+
+```{r}
+pstr_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/MWU_MF_pstr_input.csv",header = TRUE)
+pstr_MF_MWU <- as.data.frame(pstr_MF_MWU)
+pstr_MF_MWU <- pstr_MF_MWU[,-c(2,3)]
+pstr_MF_MWU$Category <- "MF"
+
+pstr_MF_input <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/MF_pstr_input.csv",header = TRUE)
+pstr_MF_input <- as.data.frame(pstr_MF_input[,-c(3,5)])
+pstr_MF_input <- as.data.table(pstr_MF_input)[, toString(seq), by=list(name,term)]
+pstr_GOMWU_MF <- merge(pstr_MF_input,pstr_MF_MWU,by="name")
+
+colnames(pstr_GOMWU_MF)[1] = "term"
+colnames(pstr_GOMWU_MF)[2] = "ID"
+colnames(pstr_GOMWU_MF)[3] = "genes"
+colnames(pstr_GOMWU_MF)[5] = "count"
+pstr_GOMWU_MF <- pstr_GOMWU_MF[,-c(6)]
+colnames(pstr_GOMWU_MF)[6] = "adj_pval"
+pstr_GOMWU_MF <- pstr_GOMWU_MF[, c(7, 2, 1, 3, 6, 4 )]
+
+
+pstr_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/pstr/DESeq2/DESeq_treatment.csv")
+colnames(pstr_DESeq)[colnames(pstr_DESeq)=="X"] <- "Entry"
+pstr_DESeq <- pstr_DESeq[,-c(4)]
+colnames(pstr_DESeq)[1] = "ID"
+colnames(pstr_DESeq)[2] = "AveExpr"
+colnames(pstr_DESeq)[3] = "logFC"
+colnames(pstr_DESeq)[4] = "t"
+colnames(pstr_DESeq)[5] = "P.Value"
+colnames(pstr_DESeq)[6] = "adj.P.Value"
+pstr_DESeq <- pstr_DESeq[, c(1, 3, 2, 4, 5, 6 )]
+
+circ <- circle_dat(pstr_GOMWU_MF,pstr_DESeq)
+deltaRank <- pstr_GOMWU_MF[,-c(1,3,4,5)]
+circ <- merge(circ,deltaRank,by="ID")
+circ <- circ[,-c(8)]
+colnames(circ)[8] = "zscore"
+pstr_circ_sig <- subset(circ, circ$adj_pval <= 0.05)
+# Use the following command to reduce GO Term overlap. We will plot the top 5 resulting terms in the next section
+pstr_MF_reduced_circ <- reduce_overlap(pstr_circ_sig, overlap = 0.75)
+```
+
+### Line Plot
+
+We will use -log(padj) to visualize our GO-term enrichment.
+
+#### C.natans
+```{r}
+cnat_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/cnat/DESeq2/DESeq_treatment.csv")
+colnames(cnat_DESeq)[1] <- "Entry"
+
+cnat_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/MWU_BP_cnat_input.csv",header = TRUE)
+cnat_BP_MWU <- as.data.frame(cnat_BP_MWU)
+cnat_BP_MWU <- cnat_BP_MWU[,-c(2)]
+cnat_BP_MWU$category <- "BP"
+cnat_BP_MWU$species <- "cnat"
+cnat_BP_MWU$totalGenes <- nrow(cnat_DESeq)
+cnat_BP_MWU$logpadj <- -log(cnat_BP_MWU$p.adj)
+colnames(cnat_BP_MWU)
+colnames(cnat_BP_MWU)[3] <- "nGenes"
+colnames(cnat_BP_MWU)[4] <- "GO"
+colnames(cnat_BP_MWU)[5] <- "Pathway"
+cnat_BP_MWU <- cnat_BP_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+cnat_BP_MWU <- cnat_BP_MWU[order(cnat_BP_MWU$p.adj),]
+cnat_BP_reduced_circ <- cnat_BP_reduced_circ[order(cnat_BP_reduced_circ$adj_pval),]
+head(cnat_BP_reduced_circ)
+# Remove redundant GO terms from cnat_BP_MWU and keep 5 most significant
+head(cnat_BP_MWU)
+# Removed GO:0006310[5]
+cnat_BP_MWU_top5 <- cnat_BP_MWU[c(1:4,6),]
+```
+
+```{r}
+cnat_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/cnat/DESeq2/DESeq_treatment.csv")
+colnames(cnat_DESeq)[1] <- "Entry"
+
+cnat_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/MWU_MF_cnat_input.csv",header = TRUE)
+cnat_MF_MWU <- as.data.frame(cnat_MF_MWU)
+cnat_MF_MWU <- cnat_MF_MWU[,-c(2)]
+cnat_MF_MWU$category <- "MF"
+cnat_MF_MWU$species <- "cnat"
+cnat_MF_MWU$totalGenes <- nrow(cnat_DESeq)
+cnat_MF_MWU$logpadj <- -log(cnat_MF_MWU$p.adj)
+colnames(cnat_MF_MWU)
+colnames(cnat_MF_MWU)[3] <- "nGenes"
+colnames(cnat_MF_MWU)[4] <- "GO"
+colnames(cnat_MF_MWU)[5] <- "Pathway"
+cnat_MF_MWU <- cnat_MF_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+cnat_MF_MWU <- cnat_MF_MWU[order(cnat_MF_MWU$p.adj),]
+cnat_MF_reduced_circ <- cnat_MF_reduced_circ[order(cnat_MF_reduced_circ$adj_pval),]
+head(cnat_MF_reduced_circ)
+# Remove redundant GO terms from cnat_MF_MWU and keep 5 most significant
+head(cnat_MF_MWU)
+# Removed GO:0004519[5]
+cnat_MF_MWU_top5 <- cnat_MF_MWU[c(1:4,6),]
+```
+
+```{r}
+cnat_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/cnat/DESeq2/DESeq_treatment.csv")
+colnames(cnat_DESeq)[1] <- "Entry"
+
+cnat_CC_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/cnat/MWU_CC_cnat_input.csv",header = TRUE)
+cnat_CC_MWU <- as.data.frame(cnat_CC_MWU)
+cnat_CC_MWU <- cnat_CC_MWU[,-c(2)]
+cnat_CC_MWU$category <- "CC"
+cnat_CC_MWU$species <- "cnat"
+cnat_CC_MWU$totalGenes <- nrow(cnat_DESeq)
+cnat_CC_MWU$logpadj <- -log(cnat_CC_MWU$p.adj)
+colnames(cnat_CC_MWU)
+colnames(cnat_CC_MWU)[3] <- "nGenes"
+colnames(cnat_CC_MWU)[4] <- "GO"
+colnames(cnat_CC_MWU)[5] <- "Pathway"
+cnat_CC_MWU <- cnat_CC_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+cnat_CC_MWU <- cnat_CC_MWU[order(cnat_CC_MWU$p.adj),]
+# Remove redundant GO terms and keep 5 most significant
+# Removed GO:1905368[4]
+# Removed GO:0005838[5]
+cnat_CC_MWU_top5 <- cnat_CC_MWU[c(1:3,6,7),]
+```
+
+```{r}
+colnames(cnat_BP_MWU_top5)
+colnames(cnat_MF_MWU_top5)
+
+cnat_ALL <- rbind(cnat_BP_MWU_top5,cnat_MF_MWU_top5)
+
+cnat <- 
+ggplot(data=cnat_ALL,aes(x=reorder(Pathway,logpadj),y=logpadj,fill=species))+
+  geom_point(aes(color=species,size=nGenes))+
+  coord_flip()+
+  geom_segment(aes(xend=Pathway,yend=0,color=species),linewidth =0.75)+
+  #scale_x_discrete(labels = function(x) str_wrap(x,width=70))
+  facet_grid(category ~ ., scales = "free_y")+
+  labs(title = "C. natans GO Enrichment")+
+  ylab("-log(padj)")+
+  xlab(NULL)+
+  theme_light()+
+ # theme(strip.background = element_rect(fill = "#ff6666"))+
+  scale_size_continuous(limits = c(100,400), breaks = c(100,200,300,400),name = "nGenes")+
+  scale_color_manual(values=c("#ff6666"))+
+  ylim(0,50)
+cnat
+```
+
+#### M.cavernosa
+```{r}
+mcav_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/mcav/DESeq2/DESeq_treatment.csv")
+colnames(mcav_DESeq)[1] <- "Entry"
+
+mcav_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/MWU_BP_mcav_input.csv",header = TRUE)
+mcav_BP_MWU <- as.data.frame(mcav_BP_MWU)
+mcav_BP_MWU <- mcav_BP_MWU[,-c(2)]
+mcav_BP_MWU$category <- "BP"
+mcav_BP_MWU$species <- "mcav"
+mcav_BP_MWU$totalGenes <- nrow(mcav_DESeq)
+mcav_BP_MWU$logpadj <- -log(mcav_BP_MWU$p.adj)
+colnames(mcav_BP_MWU)
+colnames(mcav_BP_MWU)[3] <- "nGenes"
+colnames(mcav_BP_MWU)[4] <- "GO"
+colnames(mcav_BP_MWU)[5] <- "Pathway"
+mcav_BP_MWU <- mcav_BP_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+mcav_BP_MWU <- mcav_BP_MWU[order(mcav_BP_MWU$p.adj),]
+mcav_BP_reduced_circ <- mcav_BP_reduced_circ[order(mcav_BP_reduced_circ$adj_pval),]
+head(mcav_BP_reduced_circ)
+# Remove redundant GO terms from mcav_BP_MWU and keep 5 most significant
+head(mcav_BP_MWU)
+# Removed GO:0006399[4]
+# Removed GO:0006400[5]
+# Removed GO:0007018[6]
+mcav_BP_MWU_top5 <- mcav_BP_MWU[c(1:3,7,8),]
+```
+
+```{r}
+mcav_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/mcav/DESeq2/DESeq_treatment.csv")
+colnames(mcav_DESeq)[1] <- "Entry"
+
+mcav_CC_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/MWU_CC_mcav_input.csv",header = TRUE)
+mcav_CC_MWU <- as.data.frame(mcav_CC_MWU)
+mcav_CC_MWU <- mcav_CC_MWU[,-c(2)]
+mcav_CC_MWU$category <- "CC"
+mcav_CC_MWU$species <- "mcav"
+mcav_CC_MWU$totalGenes <- nrow(mcav_DESeq)
+mcav_CC_MWU$logpadj <- -log(mcav_CC_MWU$p.adj)
+colnames(mcav_CC_MWU)
+colnames(mcav_CC_MWU)[3] <- "nGenes"
+colnames(mcav_CC_MWU)[4] <- "GO"
+colnames(mcav_CC_MWU)[5] <- "Pathway"
+mcav_CC_MWU <- mcav_CC_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+mcav_CC_MWU <- mcav_CC_MWU[order(mcav_CC_MWU$p.adj),]
+mcav_CC_MWU_top5 <- mcav_CC_MWU[c(1:5),]
+```
+
+```{r}
+mcav_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/mcav/DESeq2/DESeq_treatment.csv")
+colnames(mcav_DESeq)[1] <- "Entry"
+
+mcav_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/mcav/MWU_MF_mcav_input.csv",header = TRUE)
+mcav_MF_MWU <- as.data.frame(mcav_MF_MWU)
+mcav_MF_MWU <- mcav_MF_MWU[,-c(2)]
+mcav_MF_MWU$category <- "MF"
+mcav_MF_MWU$species <- "mcav"
+mcav_MF_MWU$totalGenes <- nrow(mcav_DESeq)
+mcav_MF_MWU$logpadj <- -log(mcav_MF_MWU$p.adj)
+colnames(mcav_MF_MWU)
+colnames(mcav_MF_MWU)[3] <- "nGenes"
+colnames(mcav_MF_MWU)[4] <- "GO"
+colnames(mcav_MF_MWU)[5] <- "Pathway"
+mcav_MF_MWU <- mcav_MF_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+mcav_MF_MWU <- mcav_MF_MWU[order(mcav_MF_MWU$p.adj),]
+mcav_MF_reduced_circ <- mcav_MF_reduced_circ[order(mcav_MF_reduced_circ$adj_pval),]
+head(mcav_MF_reduced_circ)
+# Remove redundant GO terms from mcav_MF_MWU and keep 5 most significant
+head(mcav_MF_MWU)
+# Removed GO:0015267[2]
+# Removed GO:0022839[4]
+mcav_MF_MWU_top5 <- mcav_MF_MWU[c(1,3,5,6,7),]
+```
+
+```{r}
+colnames(mcav_BP_MWU_top5)
+colnames(mcav_MF_MWU_top5)
+colnames(mcav_CC_MWU_top5)
+
+mcav_ALL <- rbind(mcav_BP_MWU_top5,mcav_MF_MWU_top5)
+
+mcav <- 
+ggplot(data=mcav_ALL,aes(x=reorder(Pathway,logpadj),y=logpadj,fill=species))+
+  geom_point(aes(color=species,size=nGenes))+
+  coord_flip()+
+  geom_segment(aes(xend=Pathway,yend=0,color=species),linewidth =0.75)+
+  #scale_x_discrete(labels = function(x) str_wrap(x,width=70))
+  facet_grid(category ~ ., scales = "free_y")+
+  labs(title = "M. cavernosa GO Enrichment")+
+  ylab("-log(padj)")+
+  xlab(NULL)+
+  theme_light()+
+  scale_size_continuous(limits = c(100,400), breaks = c(100,200,300,400),name = "nGenes")+
+  scale_color_manual(values=c("#0099ff"))+
+  ylim(0,50)
+mcav
+```
+
+
+#### O.annularis
+```{r}
+oann_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/oann/DESeq2/DESeq_treatment.csv")
+colnames(oann_DESeq)[1] <- "Entry"
+
+oann_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/MWU_BP_oann_input.csv",header = TRUE)
+oann_BP_MWU <- as.data.frame(oann_BP_MWU)
+oann_BP_MWU <- oann_BP_MWU[,-c(2)]
+oann_BP_MWU$category <- "BP"
+oann_BP_MWU$species <- "oann"
+oann_BP_MWU$totalGenes <- nrow(oann_DESeq)
+oann_BP_MWU$logpadj <- -log(oann_BP_MWU$p.adj)
+colnames(oann_BP_MWU)
+colnames(oann_BP_MWU)[3] <- "nGenes"
+colnames(oann_BP_MWU)[4] <- "GO"
+colnames(oann_BP_MWU)[5] <- "Pathway"
+oann_BP_MWU <- oann_BP_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+oann_BP_MWU <- oann_BP_MWU[order(oann_BP_MWU$p.adj),]
+oann_BP_reduced_circ <- oann_BP_reduced_circ[order(oann_BP_reduced_circ$adj_pval),]
+head(oann_BP_reduced_circ)
+# Remove redundant GO terms from oann_BP_MWU and keep 5 most significant
+head(oann_BP_MWU)
+# Removed GO:0006302[2]
+# Removed GO:0006310[3]
+# Removed GO:0006281[4]
+oann_BP_MWU_top5 <- oann_BP_MWU[c(1,5,6,7,8),]
+```
+
+```{r}
+oann_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/oann/DESeq2/DESeq_treatment.csv")
+colnames(oann_DESeq)[1] <- "Entry"
+
+oann_CC_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/MWU_CC_oann_input.csv",header = TRUE)
+oann_CC_MWU <- as.data.frame(oann_CC_MWU)
+oann_CC_MWU <- oann_CC_MWU[,-c(2)]
+oann_CC_MWU$category <- "CC"
+oann_CC_MWU$species <- "oann"
+oann_CC_MWU$totalGenes <- nrow(oann_DESeq)
+oann_CC_MWU$logpadj <- -log(oann_CC_MWU$p.adj)
+colnames(oann_CC_MWU)
+colnames(oann_CC_MWU)[3] <- "nGenes"
+colnames(oann_CC_MWU)[4] <- "GO"
+colnames(oann_CC_MWU)[5] <- "Pathway"
+oann_CC_MWU <- oann_CC_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+oann_CC_MWU <- oann_CC_MWU[order(oann_CC_MWU$p.adj),]
+oann_CC_MWU_top5 <- oann_CC_MWU[c(1:5),]
+```
+
+```{r}
+oann_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/oann/DESeq2/DESeq_treatment.csv")
+colnames(oann_DESeq)[1] <- "Entry"
+
+oann_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/oann/MWU_MF_oann_input.csv",header = TRUE)
+oann_MF_MWU <- as.data.frame(oann_MF_MWU)
+oann_MF_MWU <- oann_MF_MWU[,-c(2)]
+oann_MF_MWU$category <- "MF"
+oann_MF_MWU$species <- "oann"
+oann_MF_MWU$totalGenes <- nrow(oann_DESeq)
+oann_MF_MWU$logpadj <- -log(oann_MF_MWU$p.adj)
+colnames(oann_MF_MWU)
+colnames(oann_MF_MWU)[3] <- "nGenes"
+colnames(oann_MF_MWU)[4] <- "GO"
+colnames(oann_MF_MWU)[5] <- "Pathway"
+oann_MF_MWU <- oann_MF_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+oann_MF_MWU <- oann_MF_MWU[order(oann_MF_MWU$p.adj),]
+oann_MF_reduced_circ <- oann_MF_reduced_circ[order(oann_MF_reduced_circ$adj_pval),]
+head(oann_MF_reduced_circ)
+# Remove redundant GO terms from oann_MF_MWU and keep 5 most significant
+head(oann_MF_MWU)
+oann_MF_MWU_top5 <- oann_MF_MWU[c(1:5),]
+```
+
+```{r}
+colnames(oann_BP_MWU_top5)
+colnames(oann_MF_MWU_top5)
+
+oann_ALL <- rbind(oann_BP_MWU_top5,oann_MF_MWU_top5)
+
+oann <- 
+ggplot(data=oann_ALL,aes(x=reorder(Pathway,logpadj),y=logpadj,fill=species))+
+  geom_point(aes(color=species,size=nGenes))+
+  coord_flip()+
+  geom_segment(aes(xend=Pathway,yend=0,color=species),linewidth =0.75)+
+  #scale_x_discrete(labels = function(x) str_wrap(x,width=70))
+  facet_grid(category ~ ., scales = "free_y")+
+  labs(title = "O.annularis GO Enrichment")+
+  ylab("-log(padj)")+
+  xlab(NULL)+
+  theme_light()+
+  #theme(strip.background = element_rect(fill = "#ffc125"))+
+  #scale_size_continuous(limits = c(100,400), breaks = c(100,200,300,400),name = "nGenes")+
+  scale_color_manual(values=c("#ffc125"))+
+  ylim(0,50)
+oann
+```
+
+
+#### P.astreoides
+```{r}
+past_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/past/DESeq2/DESeq_treatment.csv")
+colnames(past_DESeq)[1] <- "Entry"
+
+past_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/MWU_BP_past_input.csv",header = TRUE)
+past_BP_MWU <- as.data.frame(past_BP_MWU)
+past_BP_MWU <- past_BP_MWU[,-c(2)]
+past_BP_MWU$category <- "BP"
+past_BP_MWU$species <- "past"
+past_BP_MWU$totalGenes <- nrow(past_DESeq)
+past_BP_MWU$logpadj <- -log(past_BP_MWU$p.adj)
+colnames(past_BP_MWU)
+colnames(past_BP_MWU)[3] <- "nGenes"
+colnames(past_BP_MWU)[4] <- "GO"
+colnames(past_BP_MWU)[5] <- "Pathway"
+past_BP_MWU <- past_BP_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+past_BP_MWU <- past_BP_MWU[order(past_BP_MWU$p.adj),]
+past_BP_reduced_circ <- past_BP_reduced_circ[order(past_BP_reduced_circ$adj_pval),]
+head(past_BP_reduced_circ)
+# Remove redundant GO terms from past_BP_MWU and keep 5 most significant
+head(past_BP_MWU)
+# Removed GO:0034645[1]
+# Removed GO:1901566[3]
+# Removed GO:0043603[5]
+past_BP_MWU_top5 <- past_BP_MWU[c(2,4,6,7,8),]
+```
+
+```{r}
+past_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/past/DESeq2/DESeq_treatment.csv")
+colnames(past_DESeq)[1] <- "Entry"
+
+past_CC_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/MWU_CC_past_input.csv",header = TRUE)
+past_CC_MWU <- as.data.frame(past_CC_MWU)
+past_CC_MWU <- past_CC_MWU[,-c(2)]
+past_CC_MWU$category <- "CC"
+past_CC_MWU$species <- "past"
+past_CC_MWU$totalGenes <- nrow(past_DESeq)
+past_CC_MWU$logpadj <- -log(past_CC_MWU$p.adj)
+colnames(past_CC_MWU)
+colnames(past_CC_MWU)[3] <- "nGenes"
+colnames(past_CC_MWU)[4] <- "GO"
+colnames(past_CC_MWU)[5] <- "Pathway"
+past_CC_MWU <- past_CC_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+past_CC_MWU <- past_CC_MWU[order(past_CC_MWU$p.adj),]
+past_CC_MWU_top5 <- past_CC_MWU[c(1:5),]
+```
+
+```{r}
+past_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/past/DESeq2/DESeq_treatment.csv")
+colnames(past_DESeq)[1] <- "Entry"
+
+past_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/past/MWU_MF_past_input.csv",header = TRUE)
+past_MF_MWU <- as.data.frame(past_MF_MWU)
+past_MF_MWU <- past_MF_MWU[,-c(2)]
+past_MF_MWU$category <- "MF"
+past_MF_MWU$species <- "past"
+past_MF_MWU$totalGenes <- nrow(past_DESeq)
+past_MF_MWU$logpadj <- -log(past_MF_MWU$p.adj)
+colnames(past_MF_MWU)
+colnames(past_MF_MWU)[3] <- "nGenes"
+colnames(past_MF_MWU)[4] <- "GO"
+colnames(past_MF_MWU)[5] <- "Pathway"
+past_MF_MWU <- past_MF_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+past_MF_MWU <- past_MF_MWU[order(past_MF_MWU$p.adj),]
+past_MF_reduced_circ <- past_MF_reduced_circ[order(past_MF_reduced_circ$adj_pval),]
+head(past_MF_reduced_circ)
+# Remove redundant GO terms from past_MF_MWU and keep 5 most significant
+head(past_MF_MWU)
+# removed GO:0015267[2]
+# removed GO:0022839[4]
+past_MF_MWU_top5 <- past_MF_MWU[c(1,3,5,6,7),]
+```
+
+```{r}
+colnames(past_BP_MWU_top5)
+colnames(past_MF_MWU_top5)
+
+past_ALL <- rbind(past_BP_MWU_top5,past_MF_MWU_top5)
+
+past <- 
+ggplot(data=past_ALL,aes(x=reorder(Pathway,logpadj),y=logpadj,fill=species))+
+  geom_point(aes(color=species,size=nGenes))+
+  coord_flip()+
+  geom_segment(aes(xend=Pathway,yend=0,color=species),linewidth =0.75)+
+  #scale_x_discrete(labels = function(x) str_wrap(x,width=70))
+  facet_grid(category ~ ., scales = "free_y")+
+  labs(title = "P. astreoides GO Enrichment")+
+  ylab("-log(padj)")+
+  xlab(NULL)+
+  theme_light()+
+  #theme(strip.background = element_rect(fill = "#ff66ff"))+
+  scale_size_continuous(limits = c(100,400), breaks = c(100,200,300,400),name = "nGenes")+
+  scale_color_manual(values=c("#ff66ff"))+
+  ylim(0,50)
+past
+```
+
+
+#### P.strigosa
+```{r}
+pstr_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/pstr/DESeq2/DESeq_treatment.csv")
+colnames(pstr_DESeq)[1] <- "Entry"
+
+pstr_BP_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/MWU_BP_pstr_input.csv",header = TRUE)
+pstr_BP_MWU <- as.data.frame(pstr_BP_MWU)
+pstr_BP_MWU <- pstr_BP_MWU[,-c(2)]
+pstr_BP_MWU$category <- "BP"
+pstr_BP_MWU$species <- "pstr"
+pstr_BP_MWU$totalGenes <- nrow(pstr_DESeq)
+pstr_BP_MWU$logpadj <- -log(pstr_BP_MWU$p.adj)
+colnames(pstr_BP_MWU)
+colnames(pstr_BP_MWU)[3] <- "nGenes"
+colnames(pstr_BP_MWU)[4] <- "GO"
+colnames(pstr_BP_MWU)[5] <- "Pathway"
+pstr_BP_MWU <- pstr_BP_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+pstr_BP_MWU <- pstr_BP_MWU[order(pstr_BP_MWU$p.adj),]
+pstr_BP_reduced_circ <- pstr_BP_reduced_circ[order(pstr_BP_reduced_circ$adj_pval),]
+head(pstr_BP_reduced_circ)
+# Remove redundant GO terms from pstr_BP_MWU and keep 5 most significant
+head(pstr_BP_MWU)
+# Removed GO:0034645[3]
+pstr_BP_MWU_top5 <- pstr_BP_MWU[c(1,2,4,5,6),]
+```
+
+```{r}
+pstr_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/pstr/DESeq2/DESeq_treatment.csv")
+colnames(pstr_DESeq)[1] <- "Entry"
+
+pstr_CC_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/MWU_CC_pstr_input.csv",header = TRUE)
+pstr_CC_MWU <- as.data.frame(pstr_CC_MWU)
+pstr_CC_MWU <- pstr_CC_MWU[,-c(2)]
+pstr_CC_MWU$category <- "CC"
+pstr_CC_MWU$species <- "pstr"
+pstr_CC_MWU$totalGenes <- nrow(pstr_DESeq)
+pstr_CC_MWU$logpadj <- -log(pstr_CC_MWU$p.adj)
+colnames(pstr_CC_MWU)
+colnames(pstr_CC_MWU)[3] <- "nGenes"
+colnames(pstr_CC_MWU)[4] <- "GO"
+colnames(pstr_CC_MWU)[5] <- "Pathway"
+pstr_CC_MWU <- pstr_CC_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+pstr_CC_MWU <- pstr_CC_MWU[order(pstr_CC_MWU$p.adj),]
+pstr_CC_MWU_top5 <- pstr_CC_MWU[c(1:5),]
+```
+
+```{r}
+pstr_DESeq <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/pstr/DESeq2/DESeq_treatment.csv")
+colnames(pstr_DESeq)[1] <- "Entry"
+
+pstr_MF_MWU <- read.table("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/GOMWU/pstr/MWU_MF_pstr_input.csv",header = TRUE)
+pstr_MF_MWU <- as.data.frame(pstr_MF_MWU)
+pstr_MF_MWU <- pstr_MF_MWU[,-c(2)]
+pstr_MF_MWU$category <- "MF"
+pstr_MF_MWU$species <- "pstr"
+pstr_MF_MWU$totalGenes <- nrow(pstr_DESeq)
+pstr_MF_MWU$logpadj <- -log(pstr_MF_MWU$p.adj)
+colnames(pstr_MF_MWU)
+colnames(pstr_MF_MWU)[3] <- "nGenes"
+colnames(pstr_MF_MWU)[4] <- "GO"
+colnames(pstr_MF_MWU)[5] <- "Pathway"
+pstr_MF_MWU <- pstr_MF_MWU %>% 
+  mutate(LFC = if_else(delta.rank <= 0,"Down","Up"))
+
+pstr_MF_MWU <- pstr_MF_MWU[order(pstr_MF_MWU$p.adj),]
+pstr_MF_reduced_circ <- pstr_MF_reduced_circ[order(pstr_MF_reduced_circ$adj_pval),]
+head(pstr_MF_reduced_circ)
+# Remove redundant GO terms from pstr_MF_MWU and keep 5 most significant
+head(pstr_MF_MWU)
+# Removed GO:0004930[4]
+pstr_MF_MWU_top5 <- pstr_MF_MWU[c(1:3,5,6),]
+```
+
+```{r}
+colnames(pstr_BP_MWU_top5)
+colnames(pstr_MF_MWU_top5)
+
+pstr_ALL <- rbind(pstr_BP_MWU_top5,pstr_MF_MWU_top5)
+
+pstr <- 
+ggplot(data=pstr_ALL,aes(x=reorder(Pathway,logpadj),y=logpadj,fill=species))+
+  geom_point(aes(color=species,size=nGenes))+
+  coord_flip()+
+  geom_segment(aes(xend=Pathway,yend=0,color=species),linewidth =0.75)+
+  #scale_x_discrete(labels = function(x) str_wrap(x,width=70))
+  facet_grid(category ~ ., scales = "free_y")+
+  labs(title = "P. strigosa GO Enrichment")+
+  ylab("-log(padj)")+
+  xlab(NULL)+
+  theme_light()+
+  #theme(strip.background = element_rect(fill = "#ff66ff"))+
+  scale_size_continuous(limits = c(100,400), breaks = c(100,200,300,400),name = "nGenes")+
+  scale_color_manual(values=c("#00cc66"))+
+  ylim(0,50)
+pstr
+```
+
+```{r, fig.height=12,fig.width=4}
+ggarrange(cnat,
+          oann,
+          pstr,
+          mcav,
+          past,
+          ncol = 1,
+          common.legend = TRUE, legend = "right",
+          align = "hv")
+```
