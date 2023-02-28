@@ -312,7 +312,7 @@ dim(Shared_EVE_HV)  #1212
 292+1212  # 1504
 ```
 
-```{r EVE_volcano,fig.height=4,fig.width=4,dpi=200}
+```{r EVE_volcano,fig.height=3,fig.width=3,dpi=200}
 p <- ggplot(data = Shared_EVE,
        aes(x=log(beta),y=-log(pval),color=category))+
   geom_point()+
@@ -333,7 +333,7 @@ p + labs(color = "EVE Gene Category",title = "EVE Genes Volcano Plot",subtitle =
 sig_EVE <- read.csv("./all/EVE/Signficant_SCTLD_eve.csv")
 colnames(sig_EVE)
 sig_EVE <- sig_EVE[,c(2,7,8,11)]   #Orthogroup,beta, pval, category
-dim(sig_EVE)   #301 significant EVE genes
+dim(sig_EVE)   #1504 significant EVE genes
 names(sig_EVE)
 rlogs <- read.csv("./all/DESeq2/treatment_rlog.csv")
 names(rlogs)

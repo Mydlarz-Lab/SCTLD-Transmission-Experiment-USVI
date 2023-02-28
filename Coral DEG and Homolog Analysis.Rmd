@@ -227,6 +227,45 @@ cnatPCA
 
 No outliers detected in the C.natans samples (although there is huge separation... will investigate this later).
 
+#### Immune DEGs
+
+Enumerate the number of DEGs involved in immunity
+```{r}
+cnat_DEGs <- read.csv("./cnat/DESeq2/treatment_sig_DEGs.csv")
+colnames(cnat_DEGs)[1] <- "Entry"
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+cnat_DEGs_annot <- merge(cnat_DEGs,uniprot,by="Entry")
+colnames(cnat_DEGs_annot)[12] <- "GO"
+
+immunity <- cnat_DEGs_annot[cnat_DEGs_annot$GO %like% "immunity",]
+dim(immunity) #1
+immune <- cnat_DEGs_annot[cnat_DEGs_annot$GO %like% "immune",]
+dim(immune) #53
+all_immunity <- rbind(dplyr::filter(immunity, !Entry %in% intersect(immunity$Entry, immune$Entry)), immune)
+dim(all_immunity) #53 immune-related DEGgs
+
+virus <- cnat_DEGs_annot[cnat_DEGs_annot$GO %like% "virus",]
+dim(virus) #26
+viral <- cnat_DEGs_annot[cnat_DEGs_annot$GO %like% "viral",]
+dim(viral) #19
+all_viral <- rbind(dplyr::filter(virus, !Entry %in% intersect(virus$Entry, viral$Entry)), viral)
+dim(all_viral) #42
+
+bacteria <- cnat_DEGs_annot[cnat_DEGs_annot$GO %like% "bacteria",]
+dim(bacteria) #8
+bacterial <- cnat_DEGs_annot[cnat_DEGs_annot$GO %like% "bacterial",]
+dim(bacterial) #8
+all_bacterial <- rbind(dplyr::filter(bacteria, !Entry %in% intersect(bacteria$Entry, bacterial$Entry)), bacterial)
+dim(all_bacterial) #8
+
+all <- rbind(dplyr::filter(all_immunity, !Entry %in% intersect(all_immunity$Entry, all_viral$Entry)), all_viral) #83
+
+all <- rbind(dplyr::filter(all, !Entry %in% intersect(all$Entry, all_bacterial$Entry)), all_bacterial) #85
+write.csv(all,file = "./cnat/DESeq2/immune_DEGs.csv",row.names = FALSE)
+dim(cnat_DEGs) #1350
+(85/1350)*100
+```
+
 ### M.cavernosa Gene Expression
 
 ```{r,results='hide',tidy=TRUE}
@@ -275,6 +314,46 @@ mcavPCA
 ```
 
 No outliers detected in the M.cavernosa samples.
+
+#### Immune DEGs
+
+Enumerate the number of DEGs involved in immunity
+```{r}
+mcav_DEGs <- read.csv("./mcav/DESeq2/treatment_sig_DEGs.csv")
+colnames(mcav_DEGs)[1] <- "Entry"
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+mcav_DEGs_annot <- merge(mcav_DEGs,uniprot,by="Entry")
+colnames(mcav_DEGs_annot)[12] <- "GO"
+
+immunity <- mcav_DEGs_annot[mcav_DEGs_annot$GO %like% "immunity",]
+dim(immunity) #0
+immune <- mcav_DEGs_annot[mcav_DEGs_annot$GO %like% "immune",]
+dim(immune) #14
+all_immunity <- rbind(dplyr::filter(immunity, !Entry %in% intersect(immunity$Entry, immune$Entry)), immune)
+dim(all_immunity) #14 immune-related DEGgs
+
+virus <- mcav_DEGs_annot[mcav_DEGs_annot$GO %like% "virus",]
+dim(virus) #5
+viral <- mcav_DEGs_annot[mcav_DEGs_annot$GO %like% "viral",]
+dim(viral) #1
+all_viral <- rbind(dplyr::filter(virus, !Entry %in% intersect(virus$Entry, viral$Entry)), viral)
+dim(all_viral) #5
+
+bacteria <- mcav_DEGs_annot[mcav_DEGs_annot$GO %like% "bacteria",]
+dim(bacteria) #3
+bacterial <- mcav_DEGs_annot[mcav_DEGs_annot$GO %like% "bacterial",]
+dim(bacterial) #3
+all_bacterial <- rbind(dplyr::filter(bacteria, !Entry %in% intersect(bacteria$Entry, bacterial$Entry)), bacterial)
+dim(all_bacterial) #3
+
+all <- rbind(dplyr::filter(all_immunity, !Entry %in% intersect(all_immunity$Entry, all_viral$Entry)), all_viral) #15
+
+all <- rbind(dplyr::filter(all, !Entry %in% intersect(all$Entry, all_bacterial$Entry)), all_bacterial) #15
+write.csv(all,file = "./mcav/DESeq2/immune_DEGs.csv",row.names = FALSE)
+dim(mcav_DEGs) #385
+(15/385)*100
+```
+
 
 ### O.annularis Gene Expression
 
@@ -325,6 +404,46 @@ oannPCA
 
 No outliers detected in the O.annularis samples.
 
+#### Immune DEGs
+
+Enumerate the number of DEGs involved in immunity
+```{r}
+oann_DEGs <- read.csv("./oann/DESeq2/treatment_sig_DEGs.csv")
+colnames(oann_DEGs)[1] <- "Entry"
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+oann_DEGs_annot <- merge(oann_DEGs,uniprot,by="Entry")
+colnames(oann_DEGs_annot)[12] <- "GO"
+
+immunity <- oann_DEGs_annot[oann_DEGs_annot$GO %like% "immunity",]
+dim(immunity) #1
+immune <- oann_DEGs_annot[oann_DEGs_annot$GO %like% "immune",]
+dim(immune) #15
+all_immunity <- rbind(dplyr::filter(immunity, !Entry %in% intersect(immunity$Entry, immune$Entry)), immune)
+dim(all_immunity) #15 immune-related DEGgs
+
+virus <- oann_DEGs_annot[oann_DEGs_annot$GO %like% "virus",]
+dim(virus) #3
+viral <- oann_DEGs_annot[oann_DEGs_annot$GO %like% "viral",]
+dim(viral) #1
+all_viral <- rbind(dplyr::filter(virus, !Entry %in% intersect(virus$Entry, viral$Entry)), viral)
+dim(all_viral) #4
+
+bacteria <- oann_DEGs_annot[oann_DEGs_annot$GO %like% "bacteria",]
+dim(bacteria) #0
+bacterial <- oann_DEGs_annot[oann_DEGs_annot$GO %like% "bacterial",]
+dim(bacterial) #0
+all_bacterial <- rbind(dplyr::filter(bacteria, !Entry %in% intersect(bacteria$Entry, bacterial$Entry)), bacterial)
+dim(all_bacterial) #0
+
+all <- rbind(dplyr::filter(all_immunity, !Entry %in% intersect(all_immunity$Entry, all_viral$Entry)), all_viral) #17
+
+all <- rbind(dplyr::filter(all, !Entry %in% intersect(all$Entry, all_bacterial$Entry)), all_bacterial) #17
+write.csv(all,file = "./oann/DESeq2/immune_DEGs.csv",row.names = FALSE)
+dim(oann_DEGs) #229
+(17/229)*100
+```
+
+
 ### P.astreoides Gene Expression
 
 ```{r,results='hide',tidy=TRUE}
@@ -373,6 +492,46 @@ pastPCA
 ```
 
 No outliers detected in the P.astreoides samples.
+
+#### Immune DEGs
+
+Enumerate the number of DEGs involved in immunity
+```{r}
+past_DEGs <- read.csv("./past/DESeq2/treatment_sig_DEGs.csv")
+colnames(past_DEGs)[1] <- "Entry"
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+past_DEGs_annot <- merge(past_DEGs,uniprot,by="Entry")
+colnames(past_DEGs_annot)[12] <- "GO"
+
+immunity <- past_DEGs_annot[past_DEGs_annot$GO %like% "immunity",]
+dim(immunity) #0
+immune <- past_DEGs_annot[past_DEGs_annot$GO %like% "immune",]
+dim(immune) #2
+all_immunity <- rbind(dplyr::filter(immunity, !Entry %in% intersect(immunity$Entry, immune$Entry)), immune)
+dim(all_immunity) #2 immune-related DEGgs
+
+virus <- past_DEGs_annot[past_DEGs_annot$GO %like% "virus",]
+dim(virus) #0
+viral <- past_DEGs_annot[past_DEGs_annot$GO %like% "viral",]
+dim(viral) #2
+all_viral <- rbind(dplyr::filter(virus, !Entry %in% intersect(virus$Entry, viral$Entry)), viral)
+dim(all_viral) #2
+
+bacteria <- past_DEGs_annot[past_DEGs_annot$GO %like% "bacteria",]
+dim(bacteria) #0
+bacterial <- past_DEGs_annot[past_DEGs_annot$GO %like% "bacterial",]
+dim(bacterial) #0
+all_bacterial <- rbind(dplyr::filter(bacteria, !Entry %in% intersect(bacteria$Entry, bacterial$Entry)), bacterial)
+dim(all_bacterial) #0
+
+all <- rbind(dplyr::filter(all_immunity, !Entry %in% intersect(all_immunity$Entry, all_viral$Entry)), all_viral) #4
+
+all <- rbind(dplyr::filter(all, !Entry %in% intersect(all$Entry, all_bacterial$Entry)), all_bacterial) #4
+write.csv(all,file = "./past/DESeq2/immune_DEGs.csv",row.names = FALSE)
+dim(past_DEGs) #42
+(4/42)*100
+```
+
 
 ### P.strigosa Gene Expression
 
@@ -480,6 +639,1681 @@ write.csv(pstr_rlogs, file = "./pstr/DESeq2/treatment_rlog.csv")
 DEGs <- pstr_res %>% filter(padj < 0.05)
 write.csv(DEGs, file = "./pstr/DESeq2/treatment_sig_DEGs.csv")  
 # 90 DEGs
+```
+
+#### Immune DEGs
+
+Enumerate the number of DEGs involved in immunity
+```{r}
+pstr_DEGs <- read.csv("./pstr/DESeq2/treatment_sig_DEGs.csv")
+colnames(pstr_DEGs)[1] <- "Entry"
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+pstr_DEGs_annot <- merge(pstr_DEGs,uniprot,by="Entry")
+colnames(pstr_DEGs_annot)[12] <- "GO"
+
+immunity <- pstr_DEGs_annot[pstr_DEGs_annot$GO %like% "immunity",]
+dim(immunity) #0
+immune <- pstr_DEGs_annot[pstr_DEGs_annot$GO %like% "immune",]
+dim(immune) #1
+all_immunity <- rbind(dplyr::filter(immunity, !Entry %in% intersect(immunity$Entry, immune$Entry)), immune)
+dim(all_immunity) #1 immune-related DEGgs
+
+virus <- pstr_DEGs_annot[pstr_DEGs_annot$GO %like% "virus",]
+dim(virus) #1
+viral <- pstr_DEGs_annot[pstr_DEGs_annot$GO %like% "viral",]
+dim(viral) #0
+all_viral <- rbind(dplyr::filter(virus, !Entry %in% intersect(virus$Entry, viral$Entry)), viral)
+dim(all_viral) #1
+
+bacteria <- pstr_DEGs_annot[pstr_DEGs_annot$GO %like% "bacteria",]
+dim(bacteria) #0
+bacterial <- pstr_DEGs_annot[pstr_DEGs_annot$GO %like% "bacterial",]
+dim(bacterial) #0
+all_bacterial <- rbind(dplyr::filter(bacteria, !Entry %in% intersect(bacteria$Entry, bacterial$Entry)), bacterial)
+dim(all_bacterial) #0
+
+all <- rbind(dplyr::filter(all_immunity, !Entry %in% intersect(all_immunity$Entry, all_viral$Entry)), all_viral) #2
+
+all <- rbind(dplyr::filter(all, !Entry %in% intersect(all$Entry, all_bacterial$Entry)), all_bacterial) #2
+write.csv(all,file = "./pstr/DESeq2/immune_DEGs.csv",row.names = FALSE)
+dim(pstr_DEGs) #90
+(2/90)*100
+```
+
+
+## Analysis of Shared Genes (inferred homologs)
+
+### Merge Raw Counts
+Obtain shared genes
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/host/")
+cnat <- read.csv("./cnat/salmon/cnat_counts.csv")
+names(cnat)
+# [1] "Entry"   "cnat_c2" "cnat_c3" "cnat_c4" "cnat_c6" "cnat_c8" "cnat_d2" "cnat_d3" "cnat_d4" "cnat_d6" "cnat_d8"
+
+mcav <- read.csv("./mcav/salmon/mcav_counts.csv")
+names(mcav)
+# [1] "Entry"   "mcav_c1" "mcav_c3" "mcav_c5" "mcav_c6" "mcav_c7" "mcav_c8" "mcav_d1" "mcav_d2" "mcav_d3" "mcav_d4" "mcav_d5" "mcav_d6" "mcav_d8"
+
+oann <- read.csv("./oann/salmon/oann_counts.csv")
+names(oann)
+#[1] "Entry"   "oann_c1" "oann_c2" "oann_c3" "oann_c6" "oann_c7" "oann_c8" "oann_d1" "oann_d3" "oann_d6" "oann_d7" "oann_d8"
+
+past <- read.csv("./past/salmon/past_counts.csv")
+names(past)
+# [1] "Entry"   "past_c1" "past_c5" "past_c6" "past_c7" "past_d1" "past_d2" "past_d3" "past_d4" "past_d5" "past_d6" "past_d7"
+
+pstr <- read.csv("./pstr/salmon/pstr_counts.csv")
+names(pstr)
+# [1] "Entry"   "pstr_c3" "pstr_c5" "pstr_c7" "pstr_c8" "pstr_d3" "pstr_d5" "pstr_d7"
+
+dim(cnat) #13,692
+dim(mcav) #11,628
+dim(oann) #13,138
+dim(past) #13,271
+dim(pstr) #9,796
+
+cnat_mcav <- merge(cnat,mcav,by="Entry") 
+dim(cnat_mcav) #5,561
+
+cnat_mcav_oann <- merge(cnat_mcav,oann,by="Entry")
+dim(cnat_mcav_oann) #4,405
+
+cnat_mcav_oann_past <- merge(cnat_mcav_oann, past, by="Entry")
+dim(cnat_mcav_oann_past) #3,121
+
+master <- merge(cnat_mcav_oann_past,pstr,by="Entry")
+dim(master) #2,149
+
+master <- master[ !duplicated(master$Entry), ]  
+dim(master) #2,149
+
+getwd()
+write.csv(master,file = "./all/DESeq2/sharedGenes_counts.csv")
+```
+
+## Venn Diagram - DEGs
+
+```{r}
+cnat <- read.csv("./cnat/DESeq2/treatment_sig_DEGs.csv")
+colnames(cnat)[1] <- "Entry"
+
+mcav <- read.csv("./mcav/DESeq2/treatment_sig_DEGs.csv")
+colnames(mcav)[1] <- "Entry"
+
+oann <- read.csv("./oann/DESeq2/treatment_sig_DEGs.csv")
+colnames(oann)[1] <- "Entry"
+
+past <- read.csv("./past/DESeq2/treatment_sig_DEGs.csv")
+colnames(past)[1] <- "Entry"
+
+pstr <- read.csv("./pstr/DESeq2/treatment_sig_DEGs.csv")
+colnames(pstr)[1] <- "Entry"
+
+dim(cnat) #1350
+dim(mcav) #385
+dim(oann) #229
+dim(past) #42
+dim(pstr) #90
+
+x <- list(
+  #cnat = cnat$Entry,
+  oann = oann$Entry,
+  #pstr = pstr$Entry,
+  #past = past$Entry,
+  mcav = mcav$Entry
+)
+
+ggvenn(
+  x,
+  #fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"),
+  stroke_size = 0.5, set_name_size = 5
+)
+dev.off()
+
+venn.plot <- draw.quintuple.venn(
+  area1 = 1350,area2 = 229,area3 = 90,area4 = 42,area5 = 385,
+  n12 = 45,n13 = 14,n14 = 9,n15 = 71,
+  n23 = 4,n24 = 3,n25 = 28,
+  n34 = 0,n35 = 9,
+  n45 = 7,
+  n123 = 3, n124 = 1,n125 = 10,
+  n134 = 0,n135 = 2,n145 = 3,
+  n234 = 0,n235 = 3,n245 = 2,
+  n345 = 0,n1234 = 0,n1235 = 2,n1245 = 1,
+  n1345 = 0,n2345 = 0,
+  n12345 = 0,
+  category = c("CNAT", "OANN", "PSTR", "PAST", "MCAV"),
+  fill = c("dodgerblue", "goldenrod1", "darkorange1", "seagreen3", "orchid3"),
+  cat.col = c("dodgerblue", "goldenrod1", "darkorange1", "seagreen3", "orchid3"),
+  #  cat.cex = 2,
+  margin = 0.05,
+  cex = c(
+    1.5, 1.5, 1.5, 1.5, 1.5, 1, 0.8, 1, 0.8, 1, 0.8, 1, 0.8, 1, 0.8,
+    1, 0.55, 1, 0.55, 1, 0.55, 1, 0.55, 1, 0.55, 1, 1, 1, 1, 1, 1.5),
+  ind = TRUE)
+```
+
+## DESeq2
+
+```{r}
+countData <- read.csv("./all/DESeq2/sharedGenes_counts.csv", row.names="Entry")
+countData <- countData[,-c(1)]
+colData <- read.csv("./all/metaData.csv", row.names = "name")
+colData <- colData[-c(53),] #remove pstr_d8
+rownames(colData)
+colnames(countData)
+# Set the design. This design will test for the differences in expression caused by treatment 
+# Filter out columns with an average number of reads less than 10. 
+dds_treatment <- DESeqDataSetFromMatrix(countData = countData, 
+                                        colData = colData, 
+                                        design = ~species + treatment )
+dds_treatment <- dds_treatment[ rowMeans(counts(dds_treatment)) > 10, ] 
+test <- DESeq(dds_treatment)
+res <- results(test,contrast = c("treatment","disease","control"))
+res
+resorderd <-res[order(res$padj),] 
+write.csv(resorderd, file = "./all/DESeq2/DESeq_treatment.csv")
+rld <- rlog(dds_treatment, blind=FALSE) 
+rrld <- assay(rld)
+write.csv(rrld, file = "./all/DESeq2/treatment_rlog.csv")  
+```
+
+## Immune Gene Comparison
+
+Prepare annotated shared genes file
+
+Upload Entry names from "treatment_rlog.csv" from the DESeq2 analysis of shared genes into Uniprot (https://www.uniprot.org/id-mapping). Set the column names to: "Entry Name" "Gene Names" "Protein names" "Function [CC]" "Keywords" "Gene Ontology (GO)"
+Save as Excel file, open in Excel, then save as "sharedGenes_uniprot.csv"
+```{r}
+all_rlog <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/treatment_rlog.csv")   #2147 shared uniprot IDs
+colnames(all_rlog)[colnames(all_rlog)=="X"] <- "Entry"
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/sharedGenesUniprot.csv")
+
+names(all_rlog)
+names(uniprot)
+uniprot <- uniprot[,-c(1)] 
+
+sharedGenesAnnot <- left_join(all_rlog,uniprot,by="Entry")
+names(sharedGenesAnnot)
+sharedGenesAnnot <- sharedGenesAnnot %>% relocate(Entry.Name, .after = Entry)
+sharedGenesAnnot <- sharedGenesAnnot %>% relocate(Gene.Names, .after = Entry.Name)
+sharedGenesAnnot <- sharedGenesAnnot %>% relocate(Protein.names, .after = Gene.Names)
+sharedGenesAnnot <- sharedGenesAnnot %>% relocate(Function..CC., .after = Protein.names)
+sharedGenesAnnot <- sharedGenesAnnot %>% relocate(Keywords, .after = Function..CC.)
+sharedGenesAnnot <- sharedGenesAnnot %>% relocate(Gene.Ontology..GO., .after = Keywords)
+write.csv(sharedGenesAnnot,file="sharedGenesAnnot.csv")
+```
+
+### Immune/Viral Response
+Look for immune/viral response related terms in the dataset
+```{bash}
+DIR=/Users/kbeavers/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2
+
+grep -c -e "immune" -e "immunity" -e "viral" -e "virus" sharedGenesAnnot.csv # 150
+grep -e "immune" -e "immunity" -e "viral" -e "virus" sharedGenesAnnot.csv > immune_viral_sharedGenesAnnot.csv
+```
+
+Run an ANOVA on those genes and then for significant ones run Tukey tests to see if expression is significantly different between control and disease-infected, disease-infected and disease-exposed, and control and disease-exposed
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/")
+genes <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/sharedGenesAnnot.csv")
+immune <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/immune_viral_sharedGenesAnnot.csv",header = FALSE)
+names(immune) <- names(genes)
+colnames(immune)
+immune <- immune[,-c(1,3:8)]
+dim(immune)
+# [1] 150  53
+names(immune)
+t_immune <- setNames(data.frame(t(immune[,-1])), immune[,1])
+row.names(t_immune)
+t_immune <- tibble::rownames_to_column(t_immune, "name")
+
+label <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/metaData.csv")
+colnames(label)
+label <- label[,c(4,5,6,8)]
+master <- merge(label,t_immune,by="name")
+dim(master)
+write.csv(master,file="immuneAndViralGenesANOVA.csv")
+
+# Perform ANOVA on the 150 immune genes
+names(master)
+# Example of one test:
+A0A0R4IBK5 <- aov(master$A0A0R4IBK5 ~ master$status, data = master)
+summary(A0A0R4IBK5)
+A7SFB5 <- aov(master$A7SFB5 ~ master$status, data = master)
+summary(A7SFB5)
+A7SLZ2 <- aov(master$A7SLZ2 ~ master$status, data = master)
+summary(A7SLZ2)
+
+A7YY53 <- aov(master$A7YY53 ~ master$status, data = master)
+summary(A7YY53) 
+TukeyHSD(A7YY53) # Significant between healthy and exposed
+
+B0S6T2 <- aov(master$B0S6T2 ~ master$status, data = master)
+summary(B0S6T2)
+C6FG12 <- aov(master$C6FG12 ~ master$status, data = master)
+summary(C6FG12)
+E9Q5F9 <- aov(master$E9Q5F9 ~ master$status, data = master)
+summary(E9Q5F9)
+
+H9BW96 <- aov(master$H9BW96 ~ master$status, data = master)
+summary(H9BW96)
+TukeyHSD(H9BW96) # Significant between exposed and disease; healthy and disease
+
+H9D1R1 <- aov(master$H9D1R1 ~ master$status, data = master)
+summary(H9D1R1)
+O00410 <- aov(master$O00410 ~ master$status, data = master)
+summary(O00410)
+O08623 <- aov(master$O08623 ~ master$status, data = master)
+summary(O08623)
+O14776 <- aov(master$O14776 ~ master$status, data = master)
+summary(O14776)
+O15118 <- aov(master$O15118 ~ master$status, data = master)
+summary(O15118)
+O15439 <- aov(master$O15439 ~ master$status, data = master)
+summary(O15439)
+O54781 <- aov(master$O54781 ~ master$status, data = master)
+summary(O54781)
+
+O60447 <- aov(master$O60447 ~ master$status, data = master)
+summary(O60447)
+TukeyHSD(O60447) # Significant between healthy and exposed
+
+O60462 <- aov(master$O60462 ~ master$status, data = master)
+summary(O60462)
+TukeyHSD(O60462) # Significant between exposed and disease
+
+O89110 <- aov(master$O89110 ~ master$status, data = master)
+summary(O89110)
+O95639 <- aov(master$O95639 ~ master$status, data = master)
+summary(O95639)
+P03360 <- aov(master$P03360 ~ master$status, data = master)
+summary(P03360)
+P04323 <- aov(master$P04323 ~ master$status, data = master)
+summary(P04323)
+
+P07314 <- aov(master$P07314 ~ master$status, data = master)
+summary(P07314)
+TukeyHSD(P07314) # Significant between healthy and exposed
+
+P09057 <- aov(master$P09057 ~ master$status, data = master)
+summary(P09057)
+
+P09884 <- aov(master$P09884 ~ master$status, data = master)
+summary(P09884)
+TukeyHSD(P09884) # Significant between exposed and disease
+
+P09917 <- aov(master$P09917 ~ master$status, data = master)
+summary(P09917)
+TukeyHSD(P09917) # Significant between healthy and disease
+
+P10394 <- aov(master$P10394 ~ master$status, data = master)
+summary(P10394)
+
+P14316 <- aov(master$P14316 ~ master$status, data = master)
+summary(P14316)
+TukeyHSD(P14316) # Significant between exposed and disease
+
+P15170 <- aov(master$P15170 ~ master$status, data = master)
+summary(P15170)
+TukeyHSD(P15170) # Significant between exposed and disease; healthy and disease
+
+P19440 <- aov(master$P19440 ~ master$status, data = master)
+summary(P19440)
+P20693 <- aov(master$P20693 ~ master$status, data = master)
+summary(P20693)
+P20749 <- aov(master$P20749 ~ master$status, data = master)
+summary(P20749)
+P20825 <- aov(master$P20825 ~ master$status, data = master)
+summary(P20825)
+P22897 <- aov(master$P22897 ~ master$status, data = master)
+summary(P22897)
+P25228 <- aov(master$P25228 ~ master$status, data = master)
+summary(P25228)
+P25291 <- aov(master$P25291 ~ master$status, data = master)
+summary(P25291)
+P25787 <- aov(master$P25787 ~ master$status, data = master)
+summary(P25787)
+P26686 <- aov(master$P26686 ~ master$status, data = master)
+summary(P26686)
+P27590 <- aov(master$P27590 ~ master$status, data = master)
+summary(P27590)
+P28799 <- aov(master$P28799 ~ master$status, data = master)
+summary(P28799)
+P30825 <- aov(master$P30825 ~ master$status, data = master)
+summary(P30825)
+P31266 <- aov(master$P31266 ~ master$status, data = master)
+summary(P31266)
+P34528 <- aov(master$P34528 ~ master$status, data = master)
+summary(P34528)
+P36993 <- aov(master$P36993 ~ master$status, data = master)
+summary(P36993)
+P43404 <- aov(master$P43404 ~ master$status, data = master)
+summary(P43404)
+P49815 <- aov(master$P49815 ~ master$status, data = master)
+summary(P49815)
+P50591 <- aov(master$P50591 ~ master$status, data = master)
+summary(P50591)
+P56517 <- aov(master$P56517 ~ master$status, data = master)
+summary(P56517)
+
+P61222 <- aov(master$P61222 ~ master$status, data = master)
+summary(P61222)
+TukeyHSD(P61222) # Significant between exposed and disease; healthy and disease
+
+P70196 <- aov(master$P70196 ~ master$status, data = master)
+summary(P70196)
+P70618 <- aov(master$P70618 ~ master$status, data = master)
+summary(P70618)
+P79145 <- aov(master$P79145 ~ master$status, data = master)
+summary(P79145)
+P92208 <- aov(master$P92208 ~ master$status, data = master)
+summary(P92208)
+P97864 <- aov(master$P97864 ~ master$status, data = master)
+summary(P97864)
+Q04721 <- aov(master$Q04721 ~ master$status, data = master)
+summary(Q04721)
+Q04861 <- aov(master$Q04861 ~ master$status, data = master)
+summary(Q04861)
+Q05086 <- aov(master$Q05086 ~ master$status, data = master)
+summary(Q05086)
+Q05876 <- aov(master$Q05876 ~ master$status, data = master)
+summary(Q05876)
+Q07113 <- aov(master$Q07113 ~ master$status, data = master)
+summary(Q07113)
+Q07352 <- aov(master$Q07352 ~ master$status, data = master)
+summary(Q07352)
+Q09328 <- aov(master$Q09328 ~ master$status, data = master)
+summary(Q09328)
+Q0VC71 <- aov(master$Q0VC71 ~ master$status, data = master)
+summary(Q0VC71)
+Q13114 <- aov(master$Q13114 ~ master$status, data = master)
+summary(Q13114)
+Q13217 <- aov(master$Q13217 ~ master$status, data = master)
+summary(Q13217)
+Q13435 <- aov(master$Q13435 ~ master$status, data = master)
+summary(Q13435)
+Q13951 <- aov(master$Q13951 ~ master$status, data = master)
+summary(Q13951)
+Q14974 <- aov(master$Q14974 ~ master$status, data = master)
+summary(Q14974)
+Q15075 <- aov(master$Q15075 ~ master$status, data = master)
+summary(Q15075)
+Q15542 <- aov(master$Q15542 ~ master$status, data = master)
+summary(Q15542)
+Q24180 <- aov(master$Q24180 ~ master$status, data = master)
+summary(Q24180)
+Q27084 <- aov(master$Q27084 ~ master$status, data = master)
+summary(Q27084)
+Q2EMV9 <- aov(master$Q2EMV9 ~ master$status, data = master)
+summary(Q2EMV9)
+Q2KJC3 <- aov(master$Q2KJC3 ~ master$status, data = master)
+summary(Q2KJC3)
+Q2TBJ5 <- aov(master$Q2TBJ5 ~ master$status, data = master)
+summary(Q2TBJ5)
+Q3TLD5 <- aov(master$Q3TLD5 ~ master$status, data = master)
+summary(Q3TLD5)
+Q3UDE2 <- aov(master$Q3UDE2 ~ master$status, data = master)
+summary(Q3UDE2)
+Q3UIR3 <- aov(master$Q3UIR3 ~ master$status, data = master)
+summary(Q3UIR3)
+Q3ZCC3 <- aov(master$Q3ZCC3 ~ master$status, data = master)
+summary(Q3ZCC3)
+Q4V7W3 <- aov(master$Q4V7W3 ~ master$status, data = master)
+summary(Q4V7W3)
+Q502K2 <- aov(master$Q502K2 ~ master$status, data = master)
+summary(Q502K2)
+Q5DU56 <- aov(master$Q5DU56 ~ master$status, data = master)
+summary(Q5DU56)
+Q5EA11 <- aov(master$Q5EA11 ~ master$status, data = master)
+summary(Q5EA11)
+Q5RG82 <- aov(master$Q5RG82 ~ master$status, data = master)
+summary(Q5RG82)
+Q5T4S7 <- aov(master$Q5T4S7 ~ master$status, data = master)
+summary(Q5T4S7)
+Q5XPI3 <- aov(master$Q5XPI3 ~ master$status, data = master)
+summary(Q5XPI3)
+Q5XPI3 <- aov(master$Q5XPI3 ~ master$status, data = master)
+summary(Q5XPI3)
+
+Q60803 <- aov(master$Q60803 ~ master$status, data = master)
+summary(Q60803)
+TukeyHSD(Q60803) # Significant between healthy and disease
+
+Q60809 <- aov(master$Q60809 ~ master$status, data = master)
+summary(Q60809)
+
+Q60997 <- aov(master$Q60997 ~ master$status, data = master)
+summary(Q60997)
+TukeyHSD(Q60997) # Significant between healthy and disease
+
+Q61382 <- aov(master$Q61382 ~ master$status, data = master)
+summary(Q61382)
+Q63HN8 <- aov(master$Q63HN8 ~ master$status, data = master)
+summary(Q63HN8)
+Q64487 <- aov(master$Q64487 ~ master$status, data = master)
+summary(Q64487)
+Q68F72 <- aov(master$Q68F72 ~ master$status, data = master)
+summary(Q68F72)
+
+Q6AYD3 <- aov(master$Q6AYD3 ~ master$status, data = master)
+summary(Q6AYD3)
+TukeyHSD(Q6AYD3) # significant between healthy and disease
+
+Q6IQ20 <- aov(master$Q6IQ20 ~ master$status, data = master)
+summary(Q6IQ20)
+Q6TMK4 <- aov(master$Q6TMK4 ~ master$status, data = master)
+summary(Q6TMK4)
+Q6UWE0 <- aov(master$Q6UWE0 ~ master$status, data = master)
+summary(Q6UWE0)
+Q7LHG5 <- aov(master$Q7LHG5 ~ master$status, data = master)
+summary(Q7LHG5)
+Q7RTR2 <- aov(master$Q7RTR2 ~ master$status, data = master)
+summary(Q7RTR2)
+Q7SIC1 <- aov(master$Q7SIC1 ~ master$status, data = master)
+summary(Q7SIC1)
+Q86WI1 <- aov(master$Q86WI1 ~ master$status, data = master)
+summary(Q86WI1)
+Q8BGX0 <- aov(master$Q8BGX0 ~ master$status, data = master)
+summary(Q8BGX0)
+
+Q8BH16 <- aov(master$Q8BH16 ~ master$status, data = master)
+summary(Q8BH16)
+TukeyHSD(Q8BH16) # significant between healthy and disease
+
+Q8BUH7 <- aov(master$Q8BUH7 ~ master$status, data = master)
+summary(Q8BUH7)
+Q8C9A2 <- aov(master$Q8C9A2 ~ master$status, data = master)
+summary(Q8C9A2)
+
+Q8CBH5 <- aov(master$Q8CBH5 ~ master$status, data = master)
+summary(Q8CBH5)
+TukeyHSD(Q8CBH5) # Significant between exposed and disease
+
+Q8CFN2 <- aov(master$Q8CFN2 ~ master$status, data = master)
+summary(Q8CFN2)
+Q8CG09 <- aov(master$Q8CG09 ~ master$status, data = master)
+summary(Q8CG09)
+Q8I7P9 <- aov(master$Q8I7P9 ~ master$status, data = master)
+summary(Q8I7P9)
+Q8IWZ3 <- aov(master$Q8IWZ3 ~ master$status, data = master)
+summary(Q8IWZ3)
+Q8L7W2 <- aov(master$Q8L7W2 ~ master$status, data = master)
+summary(Q8L7W2)
+Q8QG61 <- aov(master$Q8QG61 ~ master$status, data = master)
+summary(Q8QG61)
+Q8R0J7 <- aov(master$Q8R0J7 ~ master$status, data = master)
+summary(Q8R0J7)
+Q8R151 <- aov(master$Q8R151 ~ master$status, data = master)
+summary(Q8R151)
+Q8R3H9 <- aov(master$Q8R3H9 ~ master$status, data = master)
+summary(Q8R3H9)
+Q8VDM6 <- aov(master$Q8VDM6 ~ master$status, data = master)
+summary(Q8VDM6)
+Q91X17 <- aov(master$Q91X17 ~ master$status, data = master)
+summary(Q91X17)
+Q920Q4 <- aov(master$Q920Q4 ~ master$status, data = master)
+summary(Q920Q4)
+Q92485 <- aov(master$Q92485 ~ master$status, data = master)
+summary(Q92485)
+Q92541 <- aov(master$Q92541 ~ master$status, data = master)
+summary(Q92541)
+Q92614 <- aov(master$Q92614 ~ master$status, data = master)
+summary(Q92614)
+Q92626 <- aov(master$Q92626 ~ master$status, data = master)
+summary(Q92626)
+Q92824 <- aov(master$Q92824 ~ master$status, data = master)
+summary(Q92824)
+
+Q93009 <- aov(master$Q93009 ~ master$status, data = master)
+summary(Q93009)
+TukeyHSD(Q93009) # significant between exposed and disease
+
+Q95029 <- aov(master$Q95029 ~ master$status, data = master)
+summary(Q95029)
+Q95218 <- aov(master$Q95218 ~ master$status, data = master)
+summary(Q95218)
+Q95KV7 <- aov(master$Q95KV7 ~ master$status, data = master)
+summary(Q95KV7)
+Q96EZ8 <- aov(master$Q96EZ8 ~ master$status, data = master)
+summary(Q96EZ8)
+Q96J01 <- aov(master$Q96J01 ~ master$status, data = master)
+summary(Q96J01)
+Q96LT7 <- aov(master$Q96LT7 ~ master$status, data = master)
+summary(Q96LT7)
+Q99315 <- aov(master$Q99315 ~ master$status, data = master)
+summary(Q99315)
+Q99549 <- aov(master$Q99549 ~ master$status, data = master)
+summary(Q99549)
+Q99MN1 <- aov(master$Q99MN1 ~ master$status, data = master)
+summary(Q99MN1)
+Q9BUZ4 <- aov(master$Q9BUZ4 ~ master$status, data = master)
+summary(Q9BUZ4)
+Q9BXS5 <- aov(master$Q9BXS5 ~ master$status, data = master)
+summary(Q9BXS5)
+Q9CZT4 <- aov(master$Q9CZT4 ~ master$status, data = master)
+summary(Q9CZT4)
+Q9EQU5 <- aov(master$Q9EQU5 ~ master$status, data = master)
+summary(Q9EQU5)
+
+Q9H0Z9 <- aov(master$Q9H0Z9 ~ master$status, data = master)
+summary(Q9H0Z9)
+TukeyHSD(Q9H0Z9)  #Significant between healthy and disease
+
+Q9H8H3 <- aov(master$Q9H8H3 ~ master$status, data = master)
+summary(Q9H8H3)
+Q9I7F7 <- aov(master$Q9I7F7 ~ master$status, data = master)
+summary(Q9I7F7)
+Q9NRW4 <- aov(master$Q9NRW4 ~ master$status, data = master)
+summary(Q9NRW4)
+Q9U8W7 <- aov(master$Q9U8W7 ~ master$status, data = master)
+summary(Q9U8W7)
+Q9UBU9 <- aov(master$Q9UBU9 ~ master$status, data = master)
+summary(Q9UBU9)
+Q9UBV2 <- aov(master$Q9UBV2 ~ master$status, data = master)
+summary(Q9UBV2)
+Q9UDY8 <- aov(master$Q9UDY8 ~ master$status, data = master)
+summary(Q9UDY8)
+Q9UGM3 <- aov(master$Q9UGM3 ~ master$status, data = master)
+summary(Q9UGM3)
+Q9UHR5 <- aov(master$Q9UHR5 ~ master$status, data = master)
+summary(Q9UHR5)
+Q9VMU8 <- aov(master$Q9VMU8 ~ master$status, data = master)
+summary(Q9VMU8)
+Q9VQ93 <- aov(master$Q9VQ93 ~ master$status, data = master)
+summary(Q9VQ93)
+
+Q9VW71 <- aov(master$Q9VW71 ~ master$status, data = master)
+summary(Q9VW71)
+TukeyHSD(Q9VW71) # Significant between exposed and disease
+
+Q9Y385 <- aov(master$Q9Y385 ~ master$status, data = master)
+summary(Q9Y385)
+Q9Y5R2 <- aov(master$Q9Y5R2 ~ master$status, data = master)
+summary(Q9Y5R2)
+
+# 18 out of the 150 genes with GO terms that include the word "immune" or "immunity" or "virus" or "viral" show significant differences in expression between immune states:
+
+#A7YY53,H9BW96,O60447,O60462,P07314,P09884,P09917,P14316,P15170,P61222,Q60803,Q60997,Q6AYD3,Q8BH16,Q8CBH5,Q93009,Q9H0Z9,Q9VW71
+
+master$status <- factor(master$status, levels = c("healthy","exposed","disease"))
+
+
+# Make a dataframe including only the significant immune/viral response genes
+names(master)
+sig_genes <- select(master,c(name,A7YY53,H9BW96,O60447,O60462,P07314,P09884,P09917,P14316,P15170,P61222,Q60803,Q60997,Q6AYD3,Q8BH16,Q8CBH5,Q93009,Q9H0Z9,Q9VW71))
+
+names(master)
+dim(sig_genes)  # 52  19
+sig_genes <- tibble::column_to_rownames(sig_genes, "name")
+t_sig_genes <- as.data.frame(t(sig_genes))
+t_sig_genes <- tibble::rownames_to_column(t_sig_genes,"Entry")
+getwd()
+write.csv(t_sig_genes,file="SigImmuneAndViralGenesRlogs.csv")
+
+t_sig_genes
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+master <- left_join(t_sig_genes, uniprot,by="Entry")
+names(master)
+master <- master %>% relocate(Entry.name, .after = Entry)
+master <- master %>% relocate(Gene.names, .after = Entry.name)
+master <- master %>% relocate(Protein.names, .after = Gene.names)
+master <- master %>% relocate(Organism, .after = Protein.names)
+master <- master %>% relocate(Gene.ontology..GO., .after = Organism)
+master
+write.csv(master,file="SigImmuneAndViralGenesRlogsAnnot.csv")
+
+```
+
+Two genes removed because it did not contain the GO terms "immune" "immunity" "viral" or "virus" (O60447,Q93009)
+
+#### Boxplots
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/")
+master <- read.csv("immuneAndViralGenesANOVA.csv")
+master <- master[,-c(1)]
+label <- read.csv("metaData.csv")
+colnames(label)
+label <- label[,c(1)]
+master$species <- label
+master <- master %>% relocate(species, .before = everything())
+
+master$status <- gsub("healthy","control", master$status)
+master$status <- gsub("disease","infected", master$status)
+master$status <- factor(master$status, levels = c("control","exposed","infected"))
+master$species <- factor(master$species, levels = c("mcav","past","pstr","oann","cnat"))
+```
+
+##### Manganese-dependent ADP-ribose/CDP-alcohol diphosphatase
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+A7YY53 <- compare_means(A7YY53~status,data=master,method = "t.test")
+A7YY53
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+A7YY53_status <- 
+ggplot(data = master, 
+       aes(x = status, y = A7YY53, fill = status)) +
+  geom_point(aes(y = A7YY53, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "ADPRibase-Mn") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+A7YY53_species <- 
+ggplot(data = master, 
+       aes(x = species, y = A7YY53, fill = status)) +
+  geom_point(aes(y = A7YY53, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "ADPRibase-Mn") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/")
+#A7YY53_all <- 
+  ggarrange(A7YY53_species,A7YY53_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("ADPRibase-Mn.pdf")
+```
+
+##### ** Ras-related protein rab7
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+H9BW96 <- compare_means(H9BW96~status,data=master,method = "t.test")
+H9BW96
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+H9BW96_status <- 
+ggplot(data = master, 
+       aes(x = status, y = H9BW96, fill = status)) +
+  geom_point(aes(y = H9BW96, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Ras-related protein rab7") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(H9BW96, y.position = 11.5, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+H9BW96_species <- 
+ggplot(data = master, 
+       aes(x = species, y = H9BW96, fill = status)) +
+  geom_point(aes(y = H9BW96, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Ras-related protein rab7") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(H9BW96, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/virus/")
+#H9BW96_all <- 
+  ggarrange(H9BW96_species,H9BW96_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("rab7.pdf")
+
+H9BW96 <- aov(master$H9BW96 ~ master$status, data = master)
+H9BW96_Tukey <- TukeyHSD(H9BW96)
+TukeyHSD(H9BW96)
+plot(H9BW96_Tukey)
+```
+
+##### Neuropilin-2
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+O60462 <- compare_means(O60462~status,data=master,method = "t.test")
+O60462
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+O60462_status <- 
+ggplot(data = master, 
+       aes(x = status, y = O60462, fill = status)) +
+  geom_point(aes(y = O60462, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Neuropilin-2") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(O60462, y.position = 11, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+O60462_species <- 
+ggplot(data = master, 
+       aes(x = species, y = O60462, fill = status)) +
+  geom_point(aes(y = O60462, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Neuropilin-2") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(O60462, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/virus/")
+#O60462_all <- 
+  ggarrange(O60462_species,O60462_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("NRP2.pdf")
+```
+
+##### Glutathione hydrolase 1 proenzyme
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+P07314 <- compare_means(P07314~status,data=master,method = "t.test")
+P07314
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+P07314_status <- 
+ggplot(data = master, 
+       aes(x = status, y = P07314, fill = status)) +
+  geom_point(aes(y = P07314, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Glutathione hydrolase 1 proenzyme") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(P07314, y.position = 10.2, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+P07314_species <- 
+ggplot(data = master, 
+       aes(x = species, y = P07314, fill = status)) +
+  geom_point(aes(y = P07314, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Glutathione hydrolase 1 proenzyme") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/")
+P07314_all <- 
+  ggarrange(P07314_species,P07314_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("Ggt1.pdf")
+```
+
+##### DNA polymerase alpha catalytic subunit
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+P09884 <- compare_means(P09884~status,data=master,method = "t.test")
+P09884
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+P09884_status <- 
+ggplot(data = master, 
+       aes(x = status, y = P09884, fill = status)) +
+  geom_point(aes(y = P09884, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "DNA polymerase alpha catalytic subunit") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(P09884, y.position = 10, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+P09884_species <- 
+ggplot(data = master, 
+       aes(x = species, y = P09884, fill = status)) +
+  geom_point(aes(y = P09884, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "DNA polymerase alpha catalytic subunit") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(P09884, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/virus/")
+#P09884_all <- 
+  ggarrange(P09884_species,P09884_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("POLA1.pdf")
+```
+
+##### ** Polyunsaturated fatty acid 5-lipoxygenase:
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+P09917 <- compare_means(P09917~status,data=master,method = "t.test")
+P09917
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+P09917_status <- 
+ggplot(data = master, 
+       aes(x = status, y = P09917, fill = status)) +
+  geom_point(aes(y = P09917, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Polyunsaturated fatty acid 5-lipoxygenase") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(P09917, y.position = 11.5, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+P09917_species <- 
+ggplot(data = master, 
+       aes(x = species, y = P09917, fill = status)) +
+  geom_point(aes(y = P09917, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Polyunsaturated fatty acid 5-lipoxygenase") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/")
+#P09917_all <- 
+  ggarrange(P09917_species,P09917_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("ALOX5.pdf")
+
+P09917 <- aov(master$P09917 ~ master$status, data = master)
+summary(P09917)
+P09917_Tukey <- TukeyHSD(P09917)
+TukeyHSD(P09917)
+plot(P09917_Tukey)
+```
+
+##### ** Interferon regulatory factor 2, IRF-2:
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+P14316 <- compare_means(P14316~status,data=master,method = "t.test")
+P14316
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+P14316_status <- 
+ggplot(data = master, 
+       aes(x = status, y = P14316, fill = status)) +
+  geom_point(aes(y = P14316, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Interferon regulatory factor 2") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(P14316, y.position = 11.9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+P14316_species <- 
+ggplot(data = master, 
+       aes(x = species, y = P14316, fill = status)) +
+  geom_point(aes(y = P14316, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Interferon regulatory factor 2") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/")
+P14316_all <- 
+  ggarrange(P14316_species,P14316_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("IRF2.pdf")
+
+P14316 <- aov(master$P14316 ~ master$status, data = master)
+summary(P14316)
+P14316_Tukey <- TukeyHSD(P14316)
+TukeyHSD(P14316)
+plot(P14316_Tukey)
+```
+
+##### Eukaryotic peptide chain release factor subunit 3a, eRF3a
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+P15170 <- compare_means(P15170~status,data=master,method = "t.test")
+P15170
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+P15170_status <- 
+ggplot(data = master, 
+       aes(x = status, y = P15170, fill = status)) +
+  geom_point(aes(y = P15170, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Eukaryotic peptide chain release factor subunit 3a, eRF3a") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(P15170, y.position = 10, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+P15170_species <- 
+ggplot(data = master, 
+       aes(x = species, y = P15170, fill = status)) +
+  geom_point(aes(y = P15170, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Eukaryotic peptide chain release factor subunit 3a, eRF3a") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(P15170, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/virus/")
+#P15170_all <- 
+  ggarrange(P15170_species,P15170_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("GSP1.pdf")
+```
+
+##### ** ATP-binding cassette sub-family E member 1 
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+P61222 <- compare_means(P61222~status,data=master,method = "t.test")
+P61222
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+P61222_status <- 
+ggplot(data = master, 
+       aes(x = status, y = P61222, fill = status)) +
+  geom_point(aes(y = P61222, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "ATP-binding cassette sub-family E member 1") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(P61222, y.position = 9.7, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+P61222_species <- 
+ggplot(data = master, 
+       aes(x = species, y = P61222, fill = status)) +
+  geom_point(aes(y = P61222, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "ATP-binding cassette sub-family E member 1") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(P61222, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/virus/")
+#P61222_all <- 
+  ggarrange(P61222_species,P61222_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("Abce1.pdf")
+
+P61222 <- aov(master$P61222 ~ master$status, data = master)
+TukeyHSD(P61222)
+P61222_Tukey <- TukeyHSD(P61222)
+plot(P61222_Tukey)
+```
+
+##### ** TNF receptor-associated factor 3:
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q60803 <- compare_means(Q60803~status,data=master,method = "t.test")
+Q60803
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+Q60803_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q60803, fill = status)) +
+  geom_point(aes(y = Q60803, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "TNF receptor-associated factor 3") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q60803, y.position = 12.4, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+Q60803_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q60803, fill = status)) +
+  geom_point(aes(y = Q60803, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "TNF receptor-associated factor 3") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/")
+#Q60803_all <- 
+  ggarrange(Q60803_species,Q60803_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("TRAF3.pdf")
+
+Q60803 <- aov(master$Q60803 ~ master$status, data = master)
+summary(Q60803)
+TukeyHSD(Q60803)
+Q60803_Tukey <- TukeyHSD(Q60803)
+plot(Q60803_Tukey)
+```
+
+##### ** Deleted in malignant brain tumors 1 protein:
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q60997 <- compare_means(Q60997~status,data=master,method = "t.test")
+Q60997
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+Q60997_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q60997, fill = status)) +
+  geom_point(aes(y = Q60997, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Deleted in malignant brain tumors 1 ") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q60997, y.position = 10, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+Q60997_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q60997, fill = status)) +
+  geom_point(aes(y = Q60997, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Deleted in malignant brain tumors 1 ") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/")
+Q60997_all <- 
+  ggarrange(Q60997_species,Q60997_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("DMBT1.pdf")
+
+Q60997 <- aov(master$Q60997 ~ master$status, data = master)
+summary(Q60997)
+TukeyHSD(Q60997)
+Q60997_Tukey <- TukeyHSD(Q60997)
+plot(Q60997_Tukey)
+```
+
+#####  Proliferation-associated protein 2G4 
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q6AYD3 <- compare_means(Q6AYD3~status,data=master,method = "t.test")
+Q6AYD3
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+Q6AYD3_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q6AYD3, fill = status)) +
+  geom_point(aes(y = Q6AYD3, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Proliferation-associated protein 2G4") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q6AYD3, y.position = 9.9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+Q6AYD3_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q6AYD3, fill = status)) +
+  geom_point(aes(y = Q6AYD3, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Proliferation-associated protein 2G4") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(Q6AYD3, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/virus/")
+#Q6AYD3_all <- 
+  ggarrange(Q6AYD3_species,Q6AYD3_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("Pa2g4.pdf")
+
+Q6AYD3 <- aov(master$Q6AYD3 ~ master$status, data = master)
+summary(Q6AYD3)
+TukeyHSD(Q6AYD3)
+Q6AYD3_Tukey <- TukeyHSD(Q6AYD3)
+plot(Q6AYD3_Tukey)
+```
+
+##### F-box/LRR-repeat protein 2
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q8BH16 <- compare_means(Q8BH16~status,data=master,method = "t.test")
+Q8BH16
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+Q8BH16_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q8BH16, fill = status)) +
+  geom_point(aes(y = Q8BH16, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "F-box/LRR-repeat protein 2") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q8BH16, y.position = 7.9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+Q8BH16_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q8BH16, fill = status)) +
+  geom_point(aes(y = Q8BH16, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "F-box/LRR-repeat protein 2") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(Q8BH16, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/virus/")
+Q8BH16_all <- 
+  ggarrange(Q8BH16_species,Q8BH16_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("Fbxl2.pdf")
+```
+
+##### Major facilitator superfamily domain-containing protein 6:
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q8CBH5 <- compare_means(Q8CBH5~status,data=master,method = "t.test")
+Q8CBH5
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+Q8CBH5_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q8CBH5, fill = status)) +
+  geom_point(aes(y = Q8CBH5, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Major facilitator superfamily domain-containing protein 6") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q8CBH5, y.position = 8.5, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+Q8CBH5_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q8CBH5, fill = status)) +
+  geom_point(aes(y = Q8CBH5, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Major facilitator superfamily domain-containing protein 6") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/")
+#Q8CBH5_all <- 
+  ggarrange(Q8CBH5_species,Q8CBH5_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("Mfsd6.pdf")
+```
+
+##### ** RNA-binding protein 38:
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q9H0Z9 <- compare_means(Q9H0Z9~status,data=master,method = "t.test")
+Q9H0Z9
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+Q9H0Z9_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q9H0Z9, fill = status)) +
+  geom_point(aes(y = Q9H0Z9, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "RNA-binding protein 38") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q9H0Z9, y.position = 12.3, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+Q9H0Z9_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q9H0Z9, fill = status)) +
+  geom_point(aes(y = Q9H0Z9, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "RNA-binding protein 38") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(Q9H0Z9, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/virus/")
+Q9H0Z9_all <- 
+  ggarrange(Q9H0Z9_species,Q9H0Z9_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("RBM38.pdf")
+
+Q9H0Z9 <- aov(master$Q9H0Z9 ~ master$status, data = master)
+TukeyHSD(Q9H0Z9)
+Q9H0Z9_Tukey <- TukeyHSD(Q9H0Z9)
+plot(Q9H0Z9_Tukey)
+```
+
+##### Fat-like cadherin-related tumor suppressor homolog:
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q9VW71 <- compare_means(Q9VW71~status,data=master,method = "t.test")
+Q9VW71
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+Q9VW71_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q9VW71, fill = status)) +
+  geom_point(aes(y = Q9VW71, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Fat-like cadherin-related tumor suppressor homolog") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q9VW71, y.position = 11.5, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+Q9VW71_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q9VW71, fill = status)) +
+  geom_point(aes(y = Q9VW71, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Fat-like cadherin-related tumor suppressor homolog") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(A7YY53, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("./figures/")
+Q9VW71_all <- 
+  ggarrange(Q9VW71_species,Q9VW71_status,
+            ncol=2, widths = c(1.75,1.25),
+            common.legend = TRUE, legend = "bottom",align = "hv")
+ggsave("kug.pdf")
+```
+
+### Extracellular matrix 
+Look for ECM related terms in the dataset
+```{bash}
+DIR=/Users/kbeavers/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2
+
+grep -c "extracellular matrix structural constituent" sharedGenesAnnot.csv # 17
+grep "extracellular matrix structural constituent" sharedGenesAnnot.csv > ECM_sharedGenesAnnot.csv
+
+```
+
+Run an ANOVA on those genes and then for significant ones run Tukey tests to see if expression is significantly different between control and disease-infected, disease-infected and disease-exposed, and control and disease-exposed
+
+```{r}
+library(tibble)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/")
+genes <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/sharedGenesAnnot.csv")
+ECM <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/ECM_sharedGenesAnnot.csv",header = FALSE)
+names(ECM) <- names(genes)
+colnames(ECM)
+ECM <- ECM[,-c(1,3:8)]
+dim(ECM)
+# [1] 17  53
+names(ECM)
+t_ECM <- setNames(data.frame(t(ECM[,-1])), ECM[,1])
+row.names(t_ECM)
+t_ECM <- tibble::rownames_to_column(t_ECM, "name")
+
+label <- read.csv("metaData.csv")
+colnames(label)
+label <- label[-c(1,2,6,12:22)]
+master <- merge(label,t_ECM,by="name")
+dim(master)   #52   79
+write.csv(master,file="ECM_ANOVA.csv")
+
+# Perform ANOVA on the 17 ECM genes
+names(master)
+for(i in 10:ncol(master))
+{
+  column <- names(master[i])
+  #tidy will summarize and return neat format
+  avz <- broom::tidy(aov(master[,i] ~ status, data = master))
+  
+  # Add this condition if you only want aov with P < 0.05
+  if(avz$p.value[1] < 0.05) {
+    
+    print(column)
+  }
+}
+
+B8V7R6 <- aov(master$B8V7R6 ~ master$status, data = master)
+summary(B8V7R6)
+TukeyHSD(B8V7R6)
+Collagen <- TukeyHSD(B8V7R6) # Significant between exposed and disease; healthy and disease
+Collagen$`master$status`[,"p adj"]
+
+Q75N90 <- aov(master$Q75N90 ~ master$status, data = master)
+summary(Q75N90)
+TukeyHSD(Q75N90)
+
+Q99715 <- aov(master$Q99715 ~ master$status, data = master)
+summary(Q99715)
+TukeyHSD(Q99715)
+
+# 3 out of the 17 genes with GO term "extracellular matrix structural constituent" show significant differences in expression between immune states
+
+#B8V7R6, Q75N90, Q99715
+
+master$status <- factor(master$status, levels = c("healthy","exposed","disease"))
+
+
+```
+
+Make a dataframe including only the significant ECM genes
+
+```{r}
+library(dplyr)
+names(master)
+sig_genes <- select(master,c(name,B8V7R6,Q75N90,Q99715))
+
+names(master)
+dim(sig_genes)  # 52  4
+sig_genes <- tibble::column_to_rownames(sig_genes, "name")
+t_sig_genes <- as.data.frame(t(sig_genes))
+t_sig_genes <- tibble::rownames_to_column(t_sig_genes,"Entry")
+getwd()
+write.csv(t_sig_genes,file="ECMGenesRlogs.csv")
+
+t_sig_genes
+uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
+master <- left_join(t_sig_genes, uniprot,by="Entry")
+names(master)
+master <- master %>% relocate(Entry.name, .after = Entry)
+master <- master %>% relocate(Gene.names, .after = Entry.name)
+master <- master %>% relocate(Protein.names, .after = Gene.names)
+master <- master %>% relocate(Organism, .after = Protein.names)
+master <- master %>% relocate(Gene.ontology..GO., .after = Organism)
+master
+write.csv(master,file="ECMRlogsAnnot.csv")
+
+```
+
+#### Boxplots
+```{r}
+library(dplyr)
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/")
+master <- read.csv("ECM_ANOVA.csv")
+master <- master[,-c(1)]
+label <- read.csv("metaData.csv")
+colnames(label)
+label <- label[,c(1)]
+master$species <- label
+master <- master %>% relocate(species, .before = everything())
+
+master$status <- gsub("healthy","control", master$status)
+master$status <- gsub("disease","infected", master$status)
+master$status <- factor(master$status, levels = c("control","exposed","infected"))
+master$species <- factor(master$species, levels = c("mcav","past","pstr","oann","cnat"))
+```
+
+##### ** Collagen alpha chain (fragment)
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+B8V7R6 <- compare_means(B8V7R6~status,data=master,method = "t.test")
+B8V7R6
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+#B8V7R6_status <- 
+ggplot(data = master, 
+       aes(x = status, y = B8V7R6, fill = status)) +
+  geom_point(aes(y = B8V7R6, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Collagen alpha chain (fragment)") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(B8V7R6, y.position = 16.1, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+#B8V7R6_species <- 
+ggplot(data = master, 
+       aes(x = species, y = B8V7R6, fill = status)) +
+  geom_point(aes(y = B8V7R6, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "ADPRibase-Mn") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(B8V7R6, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/figures")
+pdf("collagen.pdf",width = 4,height = 6)
+ggarrange(B8V7R6_species,B8V7R6_status,
+          ncol = 2,nrow = 1,
+          widths = c(1.75,1.25),
+          common.legend = TRUE, legend = "bottom",
+          align = "hv"
+          )
+dev.off()
+
+```
+
+##### Fibrillin-3
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q75N90 <- compare_means(Q75N90~status,data=master,method = "t.test")
+Q75N90
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+#Q75N90_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q75N90, fill = status)) +
+  geom_point(aes(y = Q75N90, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Fibrillin-3") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q75N90, y.position = 12.7, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+#Q75N90_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q75N90, fill = status)) +
+  geom_point(aes(y = Q75N90, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Fibrillin-3") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(Q75N90, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+```
+
+##### Collagen alpha-1(XII) chain
+```{r}
+library(ggpubr)
+library(tibble)
+# just do this function to get the brackets and pvalues, we will replace these pvalues with Tukey results manually in illustrator
+Q99715 <- compare_means(Q99715~status,data=master,method = "t.test")
+Q99715
+
+my_comparisons <- list(c('control','exposed'),c('exposed','infected'),c('control','infected'))
+
+#Q99715_status <- 
+ggplot(data = master, 
+       aes(x = status, y = Q99715, fill = status)) +
+  geom_point(aes(y = Q99715, color = status),
+             position =position_dodge(width = 0.47),size = 1.5, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Collagen alpha-1(XII) chain") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))+
+  stat_pvalue_manual(Q99715, y.position = 12.5, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+#Q99715_species <- 
+ggplot(data = master, 
+       aes(x = species, y = Q99715, fill = status)) +
+  geom_point(aes(y = Q99715, color = status),
+             position =position_dodge(width = 0.47),size = 1, alpha = 2) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.5) +
+  labs(y = "Log Expression", x = NULL, fill = "status", col= "status", title = "Collagen alpha-1(XII) chain") +
+  scale_x_discrete(labels=c("control"="C","exposed"="E","infected"="I"))+
+  scale_color_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_fill_manual(values = c("#00BA38","#619CFF","#F8766D"))+
+  scale_y_continuous(expand = expansion(mult = c(0.05,0.1)))
+ # stat_pvalue_manual(Q99715, y.position = 9, step.increase = 0.15, inherit.aes = FALSE,size = 3)
+
+
+
+
+ggarrange(P09917_species,P09917_status,
+          P14316_species,P14316_status,
+          Q60803_species,Q60803_status,
+          Q60997_species,Q60997_status,
+          H9BW96_species,H9BW96_status,
+          P61222_species,P61222_status,
+          Q6AYD3_species,Q6AYD3_status,
+          Q9H0Z9_species,Q9H0Z9_status,
+          ncol = 2,nrow = 8,
+          widths = c(1.75,1.25),
+          common.legend = TRUE, legend = "bottom",
+          align = "hv"
+          )
+```
+
+### Combined Figure
+```{r}
+getwd()
+setwd("./figures")
+pdf("immunePlots_2.pdf",width = 6,height = 20)
+ggarrange(P09917_species,P09917_status,
+          P14316_species,P14316_status,
+          Q60803_species,Q60803_status,
+          Q60997_species,Q60997_status,
+          H9BW96_species,H9BW96_status,
+          P61222_species,P61222_status,
+          Q6AYD3_species,Q6AYD3_status,
+          Q9H0Z9_species,Q9H0Z9_status,
+          ncol = 2,nrow = 8,
+          widths = c(1.75,1.25),
+          common.legend = TRUE, legend = "bottom",
+          align = "hv"
+          )
+dev.off()
+
+# Remember to change the pvalues and add the ones from the TukeyHSD post hoc test
 ```
 
 ## Gene Ontology Enrichment
