@@ -3904,3 +3904,102 @@ ggarrange(cnat,
           common.legend = TRUE, legend = "right",
           align = "hv")
 ```
+
+
+# C. natans Study
+
+### PCA
+```{r}
+# Remove all columns except for "Entry ID" and the counts
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/DESeq2/")
+countData <- read.csv("treatment_rlog.csv", row.names="X")
+colnames(countData)
+Gene_expression <- as.matrix(countData)
+Metadata <- as.data.frame(read.csv("./../../../metaData.csv", header = TRUE, row.names = "name"))
+cnatMetadata <- Metadata[Metadata$species == 'cnat',]
+rownames(cnatMetadata)
+colnames(Gene_expression)
+p <- pca(Gene_expression, metadata = cnatMetadata,center = TRUE,removeVar = 0.1) #Remove the lower 10% of variables based on variance. 
+screeplot(p)
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/Symbiont_study/")
+pdf(file="cnat_symbiont_PCA.pdf",height = 8,width = 8)
+  biplot(p,
+       lab = cnatMetadata$sample_number,
+       ntopLoadings = 2,
+       showLoadings = FALSE,
+       sizeLoadingsNames = 2.5,
+       fillBoxedLoadings = alpha("white",1/4),
+       drawConnectorsLoadings = TRUE,
+       lengthLoadingsArrowsFactor = 1.7,
+       colby = "dominant_clade", colkey = c('C'='#41B6C4','D' = '#225EA8'), colLegendTitle = 'Dominant \nClade',
+       shape = "treatment",
+       ellipse = TRUE,
+       #hline = 0, vline = 0,
+       xlim=c(-145,200), ylim = c(-200,215),
+       title = 'Rlog Gene Expression PCA',
+       #showLoadings = TRUE,
+       legendPosition = 'right') 
+dev.off()
+
+
+# Access the variable loadings
+p$loadings[1:nrow(p$loadings),1:3]$PC1
+cnat_loadings <- p$loadings[1:nrow(p$loadings),1:3]
+getwd()
+write.csv(cnat_loadings,file="cnat_symbiont_pca_loadings.csv")
+```
+
+Open "cnat_symbiont_pca_loadings.csv" in Excel
+Copy top 100 Uniprot IDs and search using "ID mapping" at https://www.uniprot.org/id-mapping
+Filter by taxonomy and select "Metazoa"
+Set columns to: Entry   Entry.name    Protein.name    Gene.name 
+Download uncompressed .xlsx file, open, and save as "metazoaLoadings.csv"
+
+
+### Heatmap
+Plot the expression of the top 20 loadings
+```{r}
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/Symbiont_study/")
+loadings <- read.csv("cnat_symbiont_pca_loadings.csv")
+colnames(loadings)[colnames(loadings)=="X"] <- "Entry"
+metazoaLoadings <- read.csv("metazoaLoadings.csv")
+loadingsMaster <- right_join(loadings, metazoaLoadings,by="Entry")
+loadingsMaster <- loadingsMaster[sort(abs(loadingsMaster$PC1),decreasing = T, index.return=T)[[2]],]
+
+loadings <- loadingsMaster[c(1:20),]
+rlogs <- read.csv("./../DESeq2/treatment_rlog.csv")
+colnames(rlogs)[colnames(rlogs)=="X"] <- "Entry"
+master <- left_join(loadings,rlogs,by="Entry")
+master <- tibble::column_to_rownames(master,"Protein.name")
+names(master)
+master <- master[,-c(1:7)]
+
+label <- read.csv("./../../../metaData.csv")
+cnatLabel <- label[label$species == 'cnat',]
+head(cnatLabel)
+names(cnatLabel)
+cnatLabel <- cnatLabel[,c(3,7,8)] #name, LGR, dominant_clade
+cnatLabel <- tibble::column_to_rownames(cnatLabel,"name")
+
+getwd()
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/cnat/Symbiont_study/")
+pdf(file="loadingsHeatmap20metazoa.pdf",height=10,width=12)
+pheatmap(master,
+         cluster_cols = TRUE,
+         cluster_rows = TRUE,
+         scale = "none",
+         color = colorRampPalette(c("white","#ffeda0","#fed976","#feb24c","#fd8d3c","#fc4e2a","#e31a1c","#bd0026","#800026"))(200),
+         border_color = "black",
+         annotation_col = cnatLabel,
+         legend = TRUE,
+         legend_labels = cnatLabel,
+         fontsize_row = 6,
+         fontsize_col = 6,
+         cellwidth = 12,
+         cellheight = 8,
+         treeheight_col = 10,
+         treeheight_row = 50
+         )
+dev.off()
+```
