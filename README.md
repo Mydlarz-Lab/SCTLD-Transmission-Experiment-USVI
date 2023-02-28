@@ -2,13 +2,14 @@
 
 Any questions, email kelsey.beavers@mavs.uta.edu
 
-## This repository contains 4 directories with the associated R-markdown analysis code:
-  1. Coral DEG Analysis
-  2. Symbiont DEG Analysis
-  3. Coral EVE Analysis
-  4. Symbiont EVE Analysis
+## This repository contains 6 Rmarkdown files:
+  1. Command_Line_Code - code used to filter reads, assemble and annotate transcriptomes, and quantify transcripts
+  2. Coral DEG and Homolog Analysis - code used to quantify DEGs in each coral species and identify immune/ECM homologs with significant differential expression between disease states
+  3. Coral Orthogroup Analysis - code used to identify immune/ECM orthogroups with significant differential expression between disease states
+  4. Symbiont DEG Analysis - code used to quantify DEGs in each symbiont genera
+  5. Coral EVE Analysis - code used to for analyses of highly variable and lineage-specific single-copy coral orthologs
+  6. Symbiont EVE Analysis - code used to for analyses of highly variable and lineage-specific single-copy symbiont orthologs
   
-I have also included any and all Command Line code used to filter, assemble, quantify and annotate the RNAseq reads in "Command_Line_Code.Rmd"
 
   I hope to make these analyses as clear and reproducible as possible, so if you have any questions, please don't hesitate to ask. 
  
