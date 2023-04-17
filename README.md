@@ -10,10 +10,12 @@ Any questions, email kelsey.beavers@mavs.uta.edu
   5. Coral EVE Analysis - code used to for analyses of highly variable and lineage-specific single-copy coral orthologs
   6. Symbiont EVE Analysis - code used to for analyses of highly variable and lineage-specific single-copy symbiont orthologs
   
-
+## Not included in this repository but publicly accessible:
+  1. Raw RNAseq data generated from the transmission experiment - https://dataview.ncbi.nlm.nih.gov/objects?linked_to_id=PRJNA860922&archive=sra
+  2. MasterCoral_db used in "Command_Line_Code" to generate coral-only de novo reference transcriptomes - Kelsey Beavers. (2023). Master Coral database used in USVI SCTLD Transmission Experiment Gene Expression Analysis. https://doi.org/10.5281/zenodo.7838980 
+  3. Genomes used to create M. cavernosa (https://matzlab.weebly.com/data--code.html) and O. annularis (https://www.ncbi.nlm.nih.gov/genome/13173?genome_assembly_id=311351) genome-guided transcriptome assemblies. 
   
-## Also included in this repository is the "MasterCoral.fasta" file used in the "Command_Line_Code" to generate coral-only reference transcriptomes.
   
-  I hope to make these analyses as clear and reproducible as possible, so if you have any questions, please don't hesitate to ask. 
+I hope to make these analyses as clear and reproducible as possible, so if you have any questions, please don't hesitate to ask. 
  
   
