@@ -244,7 +244,8 @@ test <- DESeq(dds_treatment)
 rld <- rlog(dds_treatment, blind=FALSE) 
 rrld <- assay(rld)
 # 1766 after filtering out low counts
-write.csv(rrld, file = "./all/DESeq2/treatment_rlog.csv")  
+write.csv(rrld, file = "./all/DESeq2/treatment_rlog.csv") 
+getwd()
 ```
 
 ## EVE
