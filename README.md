@@ -11,6 +11,9 @@ Any questions, email kelsey.beavers@mavs.uta.edu
   6. Symbiont EVE Analysis - code used to for analyses of highly variable and lineage-specific single-copy symbiont orthologs
   
 
+  
+## Also included in this repository is the "MasterCoral.fasta" file used in the "Command_Line_Code" to generate coral-only reference transcriptomes.
+  
   I hope to make these analyses as clear and reproducible as possible, so if you have any questions, please don't hesitate to ask. 
  
   
