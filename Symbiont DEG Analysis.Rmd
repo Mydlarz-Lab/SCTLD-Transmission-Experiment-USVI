@@ -41,13 +41,13 @@ Read in the raw counts for all samples dominant in Symbiodinium symbionts
 Past: c1, c5, c6, c7, d1, d2, d3, d4, d5, d6, d7
 
 ```{r,results='hide',tidy=TRUE}
-setwd("./SymbA/salmon/")
-cladeA_samples <- read.table("SymbA_samples.csv", header = TRUE)
+setwd("./cladeA/salmon/")
+cladeA_samples <- read.table("cladeA_samples.csv", header = TRUE)
 cladeA_files <- file.path(cladeA_samples$sample, "quant.sf")
 names(cladeA_files) <- paste0("sample", 1:11)
 all(file.exists(cladeA_files))
 # Do not continue if output shows [FALSE]
-CladeA_tx2gene <- read.csv("SymbA_tx2gene.csv")
+CladeA_tx2gene <- read.csv("cladeA_tx2gene.csv")
 cladeA_txi <- tximport(cladeA_files, type = 'salmon',tx2gene=CladeA_tx2gene)
 dim(cladeA_txi$counts)
 # 10,675 transcripts with evalue ≤ 1.00E-06
@@ -68,13 +68,13 @@ Read in the raw counts for all samples dominant in Breviolum symbionts
 Pstr: c3, c5, c7, c8, d3, d5, d7
 
 ```{r,results='hide',tidy=TRUE}
-setwd("./SymbB/salmon")
-cladeB_samples <- read.table("SymbB_samples.csv", header = TRUE)
+setwd("./cladeB/salmon")
+cladeB_samples <- read.table("cladeB_samples.csv", header = TRUE)
 cladeB_files <- file.path(cladeB_samples$sample, "quant.sf")
 names(cladeB_files) <- paste0("sample", 1:7)
 all(file.exists(cladeB_files))
 # Do not continue if output shows [FALSE]
-CladeB_tx2gene <- read.csv("SymbB_tx2gene.csv")
+CladeB_tx2gene <- read.csv("CladeB_tx2gene.csv")
 cladeB_txi <- tximport(cladeB_files, type = 'salmon',tx2gene=CladeB_tx2gene)
 dim(cladeB_txi$counts)
 # 10,072 transcripts with evalue ≤ 1.00E-06
@@ -99,14 +99,14 @@ Mcav: c1, c3, c5, c6, c7, c8, d1, d2, d3, d4, d5, d6, d8
 Oann: c1, c2, c3, c6, c7, c8, d1, d3, d6, d7, d8
 
 ```{r,results='hide',tidy=TRUE}
-setwd("./SymbC/salmon")
-cladeC_samples <- read.table("SymbC_samples.csv", header = TRUE)
+setwd("./cladeC/salmon")
+cladeC_samples <- read.table("cladeC_samples.csv", header = TRUE)
 cladeC_files <- file.path(cladeC_samples$sample, "quant.sf")
 names(cladeC_files) <- paste0("sample", 1:28)
 all(file.exists(cladeC_files))
 # Do not continue if output shows [FALSE]
 
-CladeC_tx2gene <- read.csv("SymbC_tx2gene.csv")
+CladeC_tx2gene <- read.csv("cladeC_tx2gene.csv")
 cladeC_txi <- tximport(cladeC_files, type = 'salmon',tx2gene=CladeC_tx2gene)
 dim(cladeC_txi$counts)
 # 11,939 transcripts with evalue ≤ 1.00E-06
@@ -127,14 +127,14 @@ Read in the raw counts for all samples dominant in Durusdinium symbionts
 Cnat: c2, c6 ,c8, d2, d6, d8
 
 ```{r,results='hide',tidy=TRUE}
-setwd("./SymbD/salmon/")
-cladeD_samples <- read.table("SymbD_samples.csv", header = TRUE)
+setwd("./cladeD/salmon/")
+cladeD_samples <- read.table("cladeD_samples.csv", header = TRUE)
 cladeD_files <- file.path(cladeD_samples$sample, "quant.sf")
 names(cladeD_files) <- paste0("sample", 1:6)
 all(file.exists(cladeD_files))
 # Do not continue if output shows [FALSE]
 
-CladeD_tx2gene <- read.csv("SymbD_tx2gene.csv")
+CladeD_tx2gene <- read.csv("cladeD_tx2gene.csv")
 cladeD_txi <- tximport(cladeD_files, type = 'salmon',tx2gene=CladeD_tx2gene)
 dim(cladeD_txi$counts)
 # 10,328 transcripts with evalue ≤ 1.00E-06
@@ -155,12 +155,9 @@ Next we run each genera's count matrix through DESeq2 to obtain rlog normalized 
 ### Symbiodinium Gene Expression
 
 ```{r,results='hide',tidy=TRUE}
-cladeA_countData <- read.csv("./SymbA/salmon/cladeA_counts.csv", row.names="Entry")
+cladeA_countData <- read.csv("./cladeA/salmon/cladeA_counts.csv", row.names="Entry")
 colData <- read.csv("./../metaData.csv", row.names = "name")
 cladeAColData <- colData[colData$dominant_clade == 'A',]
-cladeAColData <- cladeAColData[-c(12),]
-colnames(cladeA_countData)
-rownames(cladeAColData)
 
 # Set the design. This design will test for the differences in expression caused by treatment 
 dds <- DESeqDataSetFromMatrix(countData = cladeA_countData, 
@@ -172,11 +169,11 @@ dds <- dds[ rowMeans(counts(dds)) > 10, ]
 test <- DESeq(dds)
 res <- results(test)
 cladeA_res <- as.data.frame(res[order(res$padj),])
-write.csv(cladeA_res, file = "./SymbA/DESeq2/DESeq_treatment.csv")
+write.csv(cladeA_res, file = "./cladeA/DESeq2/DESeq_treatment.csv")
 
 rld <- rlog(dds, blind=FALSE) 
 cladeA_rlogs <- as.data.frame(assay(rld))
-write.csv(cladeA_rlogs, file = "./SymbA/DESeq2/treatment_rlog.csv")  
+write.csv(cladeA_rlogs, file = "./cladeA/DESeq2/treatment_rlog.csv")  
 
 # Keep significant DEGs (padj < 0.05)
 DEGs <- cladeA_res %>% filter(padj < 0.05)
@@ -207,7 +204,7 @@ No outliers detected in the Symbiodinium samples
 ### Breviolum Gene Expression
 
 ```{r,results='hide',tidy=TRUE}
-cladeB_countData <- read.csv("./SymbB/salmon/cladeB_counts.csv", row.names="Entry")
+cladeB_countData <- read.csv("./cladeB/salmon/cladeB_counts.csv", row.names="Entry")
 colData <- read.csv("./../metaData.csv", row.names = "name")
 cladeBColData <- colData[colData$dominant_clade == 'B',]
 
@@ -221,15 +218,15 @@ dds <- dds[ rowMeans(counts(dds)) > 10, ]
 test <- DESeq(dds)
 res <- results(test)
 cladeB_res <- as.data.frame(res[order(res$padj),])
-write.csv(cladeB_res, file = "./SymbB/DESeq2/DESeq_treatment.csv")
+write.csv(cladeB_res, file = "./cladeB/DESeq2/DESeq_treatment.csv")
 
 rld <- rlog(dds, blind=FALSE) 
 cladeB_rlogs <- as.data.frame(assay(rld))
-write.csv(cladeB_rlogs, file = "./SymbB/DESeq2/treatment_rlog.csv")  
+write.csv(cladeB_rlogs, file = "./cladeB/DESeq2/treatment_rlog.csv")  
 
 # Keep significant DEGs (padj < 0.05)
 DEGs <- cladeB_res %>% filter(padj < 0.05)
-write.csv(DEGs, file = "./SymbB/DESeq2/treatment_sig_DEGs.csv")  
+write.csv(DEGs, file = "./cladeB/DESeq2/treatment_sig_DEGs.csv")  
 print(DEGs)
 ```
 
@@ -256,7 +253,7 @@ No outliers detected in the Breviolum samples
 ### Cladocopium Gene Expression
 
 ```{r,results='hide',tidy=TRUE}
-cladeC_countData <- read.csv("./SymbC/salmon/cladeC_counts.csv", row.names="Entry")
+cladeC_countData <- read.csv("./cladeC/salmon/cladeC_counts.csv", row.names="Entry")
 colData <- read.csv("./../metaData.csv", row.names = "name")
 cladeCColData <- colData[colData$dominant_clade == 'C',]
 rownames(cladeCColData)
@@ -272,11 +269,11 @@ dds <- dds[ rowMeans(counts(dds)) > 10, ]
 test <- DESeq(dds)
 res <- results(test)
 cladeC_res <- as.data.frame(res[order(res$padj),])
-write.csv(cladeC_res, file = "./SymbC/DESeq2/DESeq_treatment.csv")
+write.csv(cladeC_res, file = "./cladeC/DESeq2/DESeq_treatment.csv")
 
 rld <- rlog(dds, blind=FALSE) 
 cladeC_rlogs <- as.data.frame(assay(rld))
-write.csv(cladeC_rlogs, file = "./SymbC/DESeq2/treatment_rlog.csv")  
+write.csv(cladeC_rlogs, file = "./cladeC/DESeq2/treatment_rlog.csv")  
 
 # Keep significant DEGs (padj < 0.05)
 DEGs <- cladeC_res %>% filter(padj < 0.05)
@@ -315,14 +312,14 @@ Mcav: c1, c3, c5, c6, c7, c8, d1, d2, d3, d4, d5, d6, d8
 Oann: c1, *c2 - remove!*, c3, c6, c7, c8, d1, d3, d6, d7, d8
 
 ```{r,results='hide',tidy=TRUE}
-setwd("./SymbC/salmon")
-cladeC_samples <- read.csv("SymbC_samples_no_outlier.csv")
+setwd("./cladeC/salmon")
+cladeC_samples <- read.csv("cladeC_samples_no_outlier.csv")
 cladeC_files <- file.path(cladeC_samples$sample, "quant.sf")
 names(cladeC_files) <- paste0("sample", 1:27)
 all(file.exists(cladeC_files))
 # Do not continue if output shows [FALSE]
 
-CladeC_tx2gene <- read.csv("SymbC_tx2gene.csv")
+CladeC_tx2gene <- read.csv("cladeC_tx2gene.csv")
 cladeC_txi <- tximport(cladeC_files, type = 'salmon',tx2gene=CladeC_tx2gene)
 dim(cladeC_txi$counts)
 # 11,939 transcripts with evalue ≤ 1.00E-06
@@ -339,7 +336,7 @@ write.csv(cladeC_counts, file = "cladeC_counts.csv",quote = FALSE,row.names = FA
 ### Cladocopium Gene Expression (outlier removed)
 
 ```{r,results='hide',tidy=TRUE}
-cladeC_countData <- read.csv("./SymbC/salmon/cladeC_counts.csv", row.names="Entry")
+cladeC_countData <- read.csv("./cladeC/salmon/cladeC_counts.csv", row.names="Entry")
 colData <- read.csv("./../metaData.csv", row.names = "name")
 cladeCColData <- colData[colData$dominant_clade == 'C',]
 # Remove oann_c2 (outlier)
@@ -355,22 +352,22 @@ dds <- dds[ rowMeans(counts(dds)) > 10, ]
 test <- DESeq(dds)
 res <- results(test)
 cladeC_res <- as.data.frame(res[order(res$padj),])
-write.csv(cladeC_res, file = "./SymbC/DESeq2/DESeq_treatment.csv")
+write.csv(cladeC_res, file = "./cladeC/DESeq2/DESeq_treatment.csv")
 
 rld <- rlog(dds, blind=FALSE) 
 cladeC_rlogs <- as.data.frame(assay(rld))
-write.csv(cladeC_rlogs, file = "./SymbC/DESeq2/treatment_rlog.csv")  
+write.csv(cladeC_rlogs, file = "./cladeC/DESeq2/treatment_rlog.csv")  
 
 # Keep significant DEGs (padj < 0.05)
 DEGs <- cladeC_res %>% filter(padj < 0.05)
-write.csv(DEGs, file = "./SymbC/DESeq2/treatment_sig_DEGs.csv")  
+write.csv(DEGs, file = "./cladeC/DESeq2/treatment_sig_DEGs.csv")  
 print(DEGs)
 ```
 
 ### Durusdinium Gene Expression
 
 ```{r,results='hide',tidy=TRUE}
-cladeD_countData <- read.csv("./SymbD/salmon/cladeD_counts.csv", row.names="Entry")
+cladeD_countData <- read.csv("./cladeD/salmon/cladeD_counts.csv", row.names="Entry")
 colData <- read.csv("./../metaData.csv", row.names = "name")
 cladeDColData <- colData[colData$dominant_clade == 'D',]
 
@@ -384,15 +381,15 @@ dds <- dds[ rowMeans(counts(dds)) > 10, ]
 test <- DESeq(dds)
 res <- results(test)
 cladeD_res <- as.data.frame(res[order(res$padj),])
-write.csv(cladeD_res, file = "./SymbD/DESeq2/DESeq_treatment.csv")
+write.csv(cladeD_res, file = "./cladeD/DESeq2/DESeq_treatment.csv")
 
 rld <- rlog(dds, blind=FALSE) 
 cladeD_rlogs <- as.data.frame(assay(rld))
-write.csv(cladeD_rlogs, file = "./SymbD/DESeq2/treatment_rlog.csv")  
+write.csv(cladeD_rlogs, file = "./cladeD/DESeq2/treatment_rlog.csv")  
 
 # Keep significant DEGs (padj < 0.05)
 DEGs <- cladeD_res %>% filter(padj < 0.05)
-write.csv(DEGs, file = "./SymbD/DESeq2/treatment_sig_DEGs.csv")  
+write.csv(DEGs, file = "./cladeD/DESeq2/treatment_sig_DEGs.csv")  
 print(DEGs)
 ```
 
@@ -583,110 +580,6 @@ ggarrange(past,
           ncol=3, nrow = 2, common.legend = TRUE, legend = "right",align = "hv")
 ```
 
-## DEG Heatmaps
-### Clade B
-```{r,fig.height=5,fig.width=25}
-DEGs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbB/DESeq2/treatment_sig_DEGs.csv")
-colnames(DEGs)[colnames(DEGs)=="X"] <- "Entry"
-uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
-cladeB_DEGs_annot <- merge(DEGs,uniprot,by="Entry",all=FALSE)
-rlogs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbB/DESeq2/treatment_rlog.csv")
-colnames(rlogs)[colnames(rlogs)=="X"] <- "Entry"
-cladeB_DEGs_rlog <- merge(cladeB_DEGs_annot,rlogs,by="Entry",all=FALSE)
-names(cladeB_DEGs_rlog)
-cladeB_DEGs_rlog <- tibble::column_to_rownames(cladeB_DEGs_rlog,"Protein.names")
-cladeB_DEGs_rlog <- cladeB_DEGs_rlog[,-c(1:11)]
-
-label <- read.csv("./../metaData.csv", row.names = "name")
-label <- label[label$dominant_clade == 'B',]
-colnames(label)
-label <- label[,-c(2,3,5,7:21)]
-
-breaks = seq(-2,2, by=0.1)
-pheatmap(cladeB_DEGs_rlog,
-         cluster_cols = FALSE,
-         cluster_rows = TRUE,
-         scale = "row", # plots relative expression instead of rlog expression
-         border_color = "black",
-         annotation_col = label,
-         breaks = breaks,
-         cellwidth=12,
-         cellheight = 12,
-         main = "Breviolum DEGs",
-         color = colorRampPalette(c("#4393c3","white","#d6604d"))(length(breaks)),
-         legend = TRUE)
-```
-
-### Clade C
-```{r,fig.height=5,fig.width=25}
-DEGs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbC/DESeq2/treatment_sig_DEGs.csv")
-colnames(DEGs)[colnames(DEGs)=="X"] <- "Entry"
-uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
-cladeC_DEGs_annot <- merge(DEGs,uniprot,by="Entry",all=FALSE)
-rlogs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbC/DESeq2/treatment_rlog.csv")
-colnames(rlogs)[colnames(rlogs)=="X"] <- "Entry"
-cladeC_DEGs_rlog <- merge(cladeC_DEGs_annot,rlogs,by="Entry",all=FALSE)
-names(cladeC_DEGs_rlog)
-cladeC_DEGs_rlog <- tibble::column_to_rownames(cladeC_DEGs_rlog,"Protein.names")
-cladeC_DEGs_rlog <- cladeC_DEGs_rlog[,-c(1:11)]
-
-label <- read.csv("./../metaData.csv", row.names = "name")
-label <- label[label$dominant_clade == 'C',]
-colnames(label)
-label <- label[,-c(2,3,5,7:21)]
-rownames(label)
-label <- label[-c(19),]
-
-breaks = seq(-2,2, by=0.1)
-pheatmap(cladeC_DEGs_rlog,
-         cluster_cols = FALSE,
-         cluster_rows = TRUE,
-         scale = "row", # plots relative expression instead of rlog expression
-         border_color = "black",
-         annotation_col = label,
-         breaks = breaks,
-         cellwidth=12,
-         cellheight = 12,
-         main = "Cladocopium DEGs",
-         color = colorRampPalette(c("#4393c3","white","#d6604d"))(length(breaks)),
-         legend = TRUE)
-```
-
-
-### Clade D
-```{r,fig.height=5,fig.width=25}
-DEGs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbD/DESeq2/treatment_sig_DEGs.csv")
-colnames(DEGs)[colnames(DEGs)=="X"] <- "Entry"
-uniprot <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/uniprot.csv")
-cladeD_DEGs_annot <- merge(DEGs,uniprot,by="Entry",all=FALSE)
-rlogs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Experiment/symbiont/SymbD/DESeq2/treatment_rlog.csv")
-colnames(rlogs)[colnames(rlogs)=="X"] <- "Entry"
-cladeD_DEGs_rlog <- merge(cladeD_DEGs_annot,rlogs,by="Entry",all=FALSE)
-names(cladeD_DEGs_rlog)
-cladeD_DEGs_rlog <- tibble::column_to_rownames(cladeD_DEGs_rlog,"Protein.names")
-cladeD_DEGs_rlog <- cladeD_DEGs_rlog[,-c(1:11)]
-
-label <- read.csv("./../metaData.csv", row.names = "name")
-label <- label[label$dominant_clade == 'D',]
-colnames(label)
-label <- label[,-c(2,3,5,7:21)]
-
-breaks = seq(-2,2, by=0.1)
-pheatmap(cladeD_DEGs_rlog,
-         cluster_cols = FALSE,
-         cluster_rows = TRUE,
-         scale = "row", # plots relative expression instead of rlog expression
-         border_color = "black",
-         annotation_col = label,
-         breaks = breaks,
-         cellwidth=12,
-         cellheight = 12,
-         main = "Durusdinium DEGs",
-         color = colorRampPalette(c("#4393c3","white","#d6604d"))(length(breaks)),
-         legend = TRUE)
-```
-
-
 
 ## Venn Diagram - DEGs
 
@@ -717,56 +610,105 @@ ggvenn(
 
 ## Rab7 Correlation Analysis
 
+### Merge Count Matrices
+
+First we need to merge the individual genera count matrices together. We will merge on their Uniprot ID (inferred homolog).
+
+```{r,tidy=TRUE}
+cladeA_counts <- read.csv("./cladeA/salmon/cladeA_counts.csv")
+cladeB_counts <- read.csv("./cladeB/salmon/cladeB_counts.csv")
+cladeC_counts <- read.csv("./cladeC/salmon/cladeC_counts.csv")
+cladeD_counts <- read.csv("./cladeD/salmon/cladeD_counts.csv")
+
+A_B <- merge(cladeA_counts,cladeB_counts,by="Entry")
+A_B_C <- merge(A_B,cladeC_counts,by="Entry")
+all_counts <- merge(A_B_C,cladeD_counts,by="Entry")
+# 3379 shared uniprot ID's
+```
+
+Next we need to run this count matrix through DESeq2 to get normalized expression.
+
+```{r,tidy=TRUE}
+all_countData <- tibble::column_to_rownames(all_counts,"Entry")
+colData <- read.csv("./../metaData.csv",row.names = "name")
+# Remove Oann_c2
+colData <- colData[-c(37),]
+
+# Set the design. This design will test for the differences in expression caused by treatment while controlling for host species
+dds <- DESeqDataSetFromMatrix(countData = all_countData, 
+                                        colData = colData, 
+                                        design = ~species + treatment )
+
+# Filter out columns with an average number of counts less than 10. 
+dds <- dds[ rowMeans(counts(dds)) > 10, ] 
+test <- DESeq(dds)
+res <- results(test)
+rld <- rlog(dds, blind=FALSE) 
+all_rlogs <- as.data.frame(assay(rld))
+write.csv(all_rlogs, file = "./all/DESeq2/all_symbionts_rlogs.csv")  
+```
+
 Correlate Coral host Rab7 expression to histology, the three shared symbiont photosystem genes (psaA, psbB and psbC) and four representative metabolism genes
 psaA = Q9XQV3
 psbB = P49471
 psbC = P49472
+High affinity nitrate transporter 2.5 (NRT2.5) = Q9LPV5
 Superoxide dismutase = Q59094
 Carbonic anhydrase = Q5BCC5
 Apoptosis-inducing factor 3 = Q96NN9
 Heat shock 70 kDa protein = P11144
+Two pore calcium channel protein 1 = Q5QM84
 
 ### Clade A
 ```{r}
-coralShared_rlogs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/treatment_rlog.csv",row.names = "X")
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+coralShared_rlogs <- read.csv("treatment_rlog.csv",row.names = "X")
+colnames(coralShared_rlogs)[colnames(coralShared_rlogs)=="X"] <- "Entry"
 rab7 <- coralShared_rlogs[c("H9BW96"),]
 names(rab7)
 t_rab7 <- as.data.frame(t(rab7))
 t_rab7 <- tibble::rownames_to_column(t_rab7, "name")
 
-cladeA_rlog <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeA/DESeq2/treatment_rlog.csv",row.names = "X")
+histology <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/histologyData.csv")
+names(histology)
+cladeA_histology <- histology[histology$dominant_genus == 'Symbiodinium',]
+rownames(cladeA_histology)
+cladeA_histology <- cladeA_histology[,c(3,7:9)]
+cladeA_histology
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeA/DESeq2/")
+cladeA_rlog <- read.csv("treatment_rlog.csv",row.names = "X")
 names(cladeA_rlog)
-curatedGenes <- cladeA_rlog[c("Q9XQV3","P49471","P49472","Q59094","Q5BCC5","Q96NN9","P11144"),]
+curatedGenes <- cladeA_rlog[c("Q9XQV3","P49471","P49472","Q9LPV5","Q59094","Q5BCC5","Q96NN9","P11144","Q5QM84"),]
 t_rlogs <- as.data.frame(t(curatedGenes))
 t_rlogs <- tibble::rownames_to_column(t_rlogs, "name")
-#cladeA_correlations <- merge(t_rab7,cladeA_histology,by="name")
-cladeA_correlations <- merge(t_rab7,t_rlogs,by="name")
+cladeA_correlations <- merge(t_rab7,cladeA_histology,by="name")
+cladeA_correlations <- merge(cladeA_correlations,t_rlogs,by="name")
 
 names(cladeA_correlations)
 cladeA_correlations <- cladeA_correlations[,-c(1)]
 colnames(cladeA_correlations)
 colnames(cladeA_correlations)[1] <- "Host Rab7"
-colnames(cladeA_correlations)[2] <- "psaA"
-colnames(cladeA_correlations)[3] <- "psbB"
-colnames(cladeA_correlations)[4] <- "psbC"
-colnames(cladeA_correlations)[5] <- "Superoxide dismutase"
-colnames(cladeA_correlations)[6] <- "Carbonic anhydrase"
-colnames(cladeA_correlations)[7] <- "Apoptosis-inducing factor 3"
-colnames(cladeA_correlations)[8] <- "Heat shock protein 70 "
+colnames(cladeA_correlations)[5] <- "psaA"
+colnames(cladeA_correlations)[6] <- "psbB"
+colnames(cladeA_correlations)[7] <- "psbC"
+colnames(cladeA_correlations)[8] <- "High affinity nitrate transporter 2.5"
+colnames(cladeA_correlations)[9] <- "Superoxide dismutase"
+colnames(cladeA_correlations)[10] <- "Carbonic anhydrase"
+colnames(cladeA_correlations)[11] <- "Apoptosis-inducing factor 3"
+colnames(cladeA_correlations)[12] <- "Heat shock protein 70 "
+colnames(cladeA_correlations)[13] <- "Two pore calcium channel protein 1"
 colnames(cladeA_correlations)
 
 A = cor(cladeA_correlations)
 A.testRes = cor.mtest(cladeA_correlations, conf.level = 0.95)
 
-Symbiodinium_pvalues <- as.data.frame(A.testRes$p)
-Symbiodinium_R <- as.data.frame(A)
-Symbiodinium_R
 
-corrplot(A,p.mat = A.testRes$p,
+  corrplot(A,p.mat = A.testRes$p,
          method = 'circle',
          diag = FALSE,
          type = 'upper',
-         #sig.level = c(0.001,0.01,0.05),
+         sig.level = c(0.001,0.01,0.05),
          pch.cex = 1,
          insig = 'label_sig',
          pch.col = 'white',
@@ -781,161 +723,184 @@ corrplot(A,p.mat = A.testRes$p,
 
 ### Clade B
 ```{r}
-coralShared_rlogs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/treatment_rlog.csv",row.names = "X")
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+coralShared_rlogs <- read.csv("treatment_rlog.csv",row.names = "X")
+colnames(coralShared_rlogs)[colnames(coralShared_rlogs)=="X"] <- "Entry"
 rab7 <- coralShared_rlogs[c("H9BW96"),]
 names(rab7)
 t_rab7 <- as.data.frame(t(rab7))
 t_rab7 <- tibble::rownames_to_column(t_rab7, "name")
 
-cladeB_rlog <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeB/DESeq2/treatment_rlog.csv",row.names = "X")
+histology <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/histologyData.csv")
+names(histology)
+cladeB_histology <- histology[histology$dominant_genus == 'Breviolum',]
+cladeB_histology <- cladeB_histology[,c(3,7:9)]
+cladeB_histology
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeB/DESeq2/")
+cladeB_rlog <- read.csv("treatment_rlog.csv",row.names = "X")
 names(cladeB_rlog)
-curatedGenes <- cladeB_rlog[c("Q9XQV3","P49471","P49472","Q59094","Q5BCC5","Q96NN9","P11144"),]
+curatedGenes <- cladeB_rlog[c("Q9XQV3","P49471","P49472","Q9LPV5","Q59094","Q5BCC5","Q96NN9","P11144","Q5QM84"),]
 t_rlogs <- as.data.frame(t(curatedGenes))
 t_rlogs <- tibble::rownames_to_column(t_rlogs, "name")
-cladeB_correlations <- merge(t_rab7,t_rlogs,by="name")
+cladeB_correlations <- merge(t_rab7,cladeB_histology,by="name")
+cladeB_correlations <- merge(cladeB_correlations,t_rlogs,by="name")
 
 names(cladeB_correlations)
 cladeB_correlations <- cladeB_correlations[,-c(1)]
 colnames(cladeB_correlations)
 colnames(cladeB_correlations)[1] <- "Host Rab7"
-colnames(cladeB_correlations)[2] <- "psaA"
-colnames(cladeB_correlations)[3] <- "psbB"
-colnames(cladeB_correlations)[4] <- "psbC"
-colnames(cladeB_correlations)[5] <- "Superoxide dismutase"
-colnames(cladeB_correlations)[6] <- "Carbonic anhydrase"
-colnames(cladeB_correlations)[7] <- "Apoptosis-inducing factor 3"
-colnames(cladeB_correlations)[8] <- "Heat shock protein 70 "
+colnames(cladeB_correlations)[5] <- "psaA"
+colnames(cladeB_correlations)[6] <- "psbB"
+colnames(cladeB_correlations)[7] <- "psbC"
+colnames(cladeB_correlations)[8] <- "High affinity nitrate transporter 2.5"
+colnames(cladeB_correlations)[9] <- "Superoxide dismutase"
+colnames(cladeB_correlations)[10] <- "Carbonic anhydrase"
+colnames(cladeB_correlations)[11] <- "Apoptosis-inducing factor 3"
+colnames(cladeB_correlations)[12] <- "Heat shock protein 70 "
+colnames(cladeB_correlations)[13] <- "Two pore calcium channel protein 1"
 colnames(cladeB_correlations)
 
 B = cor(cladeB_correlations)
 B.testRes = cor.mtest(cladeB_correlations, conf.level = 0.95)
-Breviolum_pvalues <- as.data.frame(B.testRes$p)
-Breviolum_R <- as.data.frame(B)
-Breviolum_R
 
-corrplot(B,p.mat = B.testRes$p,
+
+  corrplot(B,p.mat = B.testRes$p,
          method = 'circle',
          diag = FALSE,
          type = 'upper',
-         #sig.level = c(0.001,0.01,0.05),
+         sig.level = c(0.001,0.01,0.05),
          pch.cex = 1,
          insig = 'label_sig',
          pch.col = 'white',
-         title = "Symbiodinium Correlations",
+         title = "Breviolum Correlations",
          tl.col = "black",
          tl.cex = 0.5,
         # cl.ratio = 0.15,
          tl.srt = 45,
          colorRampPalette(c("#0571b0","#92c5de","white","#f4a582","#ca0020"))(200))
-)
+
 ```
 
 
 ### Clade C
 ```{r}
-coralShared_rlogs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/treatment_rlog.csv",row.names = "X")
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+coralShared_rlogs <- read.csv("treatment_rlog.csv",row.names = "X")
+colnames(coralShared_rlogs)[colnames(coralShared_rlogs)=="X"] <- "Entry"
 rab7 <- coralShared_rlogs[c("H9BW96"),]
 names(rab7)
 t_rab7 <- as.data.frame(t(rab7))
 t_rab7 <- tibble::rownames_to_column(t_rab7, "name")
 
-cladeC_rlog <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeC/DESeq2/treatment_rlog.csv",row.names = "X")
+histology <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/histologyData.csv")
+names(histology)
+cladeC_histology <- histology[histology$dominant_genus == 'Cladocopium',]
+cladeC_histology <- cladeC_histology[,c(3,7:9)]
+cladeC_histology
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeC/DESeq2/")
+cladeC_rlog <- read.csv("treatment_rlog.csv",row.names = "X")
 names(cladeC_rlog)
-curatedGenes <- cladeC_rlog[c("Q9XQV3","P49471","P49472","Q59094","Q5BCC5","Q96NN9","P11144"),]
+curatedGenes <- cladeC_rlog[c("Q9XQV3","P49471","P49472","Q9LPV5","Q59094","Q5BCC5","Q96NN9","P11144","Q5QM84"),]
 t_rlogs <- as.data.frame(t(curatedGenes))
 t_rlogs <- tibble::rownames_to_column(t_rlogs, "name")
-cladeC_correlations <- merge(t_rab7,t_rlogs,by="name")
+cladeC_correlations <- merge(t_rab7,cladeC_histology,by="name")
+cladeC_correlations <- merge(cladeC_correlations,t_rlogs,by="name")
 
 names(cladeC_correlations)
 cladeC_correlations <- cladeC_correlations[,-c(1)]
 colnames(cladeC_correlations)
 colnames(cladeC_correlations)[1] <- "Host Rab7"
-colnames(cladeC_correlations)[2] <- "psaA"
-colnames(cladeC_correlations)[3] <- "psbB"
-colnames(cladeC_correlations)[4] <- "psbC"
-colnames(cladeC_correlations)[5] <- "Superoxide dismutase"
-colnames(cladeC_correlations)[6] <- "Carbonic anhydrase"
-colnames(cladeC_correlations)[7] <- "Apoptosis-inducing factor 3"
-colnames(cladeC_correlations)[8] <- "Heat shock protein 70 "
-cladeC_correlations <- cladeC_correlations[,-c(2)]
+colnames(cladeC_correlations)[5] <- "psaA"
+colnames(cladeC_correlations)[6] <- "psbB"
+colnames(cladeC_correlations)[7] <- "psbC"
+colnames(cladeC_correlations)[8] <- "High affinity nitrate transporter 2.5"
+colnames(cladeC_correlations)[9] <- "Superoxide dismutase"
+colnames(cladeC_correlations)[10] <- "Carbonic anhydrase"
+colnames(cladeC_correlations)[11] <- "Apoptosis-inducing factor 3"
+colnames(cladeC_correlations)[12] <- "Heat shock protein 70 "
+colnames(cladeC_correlations)[13] <- "Two pore calcium channel protein 1"
 colnames(cladeC_correlations)
 
 C = cor(cladeC_correlations)
 C.testRes = cor.mtest(cladeC_correlations, conf.level = 0.95)
-Cladocopium_pvalues <- as.data.frame(C.testRes$p)
-Cladocopium_pvalues
-Cladocopium_R <- as.data.frame(C)
-Cladocopium_R
 
 
-corrplot(C,p.mat = C.testRes$p,
+  corrplot(C,#p.mat = C.testRes$p,
          method = 'circle',
          diag = FALSE,
          type = 'upper',
-         #sig.level = c(0.001,0.01,0.05),
+         sig.level = c(0.001,0.01,0.05),
          pch.cex = 1,
          insig = 'label_sig',
          pch.col = 'white',
-         title = "Symbiodinium Correlations",
+         title = "Breviolum Correlations",
          tl.col = "black",
          tl.cex = 0.5,
         # cl.ratio = 0.15,
          tl.srt = 45,
          colorRampPalette(c("#0571b0","#92c5de","white","#f4a582","#ca0020"))(200))
-)
+
 ```
-
-
 
 ### Clade D
 ```{r}
-coralShared_rlogs <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2/treatment_rlog.csv",row.names = "X")
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/host/all/DESeq2")
+coralShared_rlogs <- read.csv("treatment_rlog.csv",row.names = "X")
+colnames(coralShared_rlogs)[colnames(coralShared_rlogs)=="X"] <- "Entry"
 rab7 <- coralShared_rlogs[c("H9BW96"),]
 names(rab7)
 t_rab7 <- as.data.frame(t(rab7))
 t_rab7 <- tibble::rownames_to_column(t_rab7, "name")
 
-cladeD_rlog <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeD/DESeq2/treatment_rlog.csv",row.names = "X")
+histology <- read.csv("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/histologyData.csv")
+names(histology)
+cladeD_histology <- histology[histology$dominant_genus == 'Durusdinium',]
+cladeD_histology <- cladeD_histology[,c(3,7:9)]
+cladeD_histology
+
+setwd("~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/SCTLD/symbiont/cladeD/DESeq2/")
+cladeD_rlog <- read.csv("treatment_rlog.csv",row.names = "X")
 names(cladeD_rlog)
-curatedGenes <- cladeD_rlog[c("Q9XQV3","P49471","P49472","Q59094","Q5BCC5","Q96NN9","P11144"),]
+curatedGenes <- cladeD_rlog[c("Q9XQV3","P49471","P49472","Q9LPV5","Q59094","Q5BCC5","Q96NN9","P11144","Q5QM84"),]
 t_rlogs <- as.data.frame(t(curatedGenes))
 t_rlogs <- tibble::rownames_to_column(t_rlogs, "name")
-cladeD_correlations <- merge(t_rab7,t_rlogs,by="name")
+cladeD_correlations <- merge(t_rab7,cladeD_histology,by="name")
+cladeD_correlations <- merge(cladeD_correlations,t_rlogs,by="name")
 
 names(cladeD_correlations)
 cladeD_correlations <- cladeD_correlations[,-c(1)]
 colnames(cladeD_correlations)
 colnames(cladeD_correlations)[1] <- "Host Rab7"
-colnames(cladeD_correlations)[2] <- "psaA"
-colnames(cladeD_correlations)[3] <- "psbB"
-colnames(cladeD_correlations)[4] <- "psbC"
-colnames(cladeD_correlations)[5] <- "Superoxide dismutase"
-colnames(cladeD_correlations)[6] <- "Carbonic anhydrase"
-colnames(cladeD_correlations)[7] <- "Apoptosis-inducing factor 3"
-colnames(cladeD_correlations)[8] <- "Heat shock protein 70 "
+colnames(cladeD_correlations)[5] <- "psaA"
+colnames(cladeD_correlations)[6] <- "psbB"
+colnames(cladeD_correlations)[7] <- "psbC"
+colnames(cladeD_correlations)[8] <- "High affinity nitrate transporter 2.5"
+colnames(cladeD_correlations)[9] <- "Superoxide dismutase"
+colnames(cladeD_correlations)[10] <- "Carbonic anhydrase"
+colnames(cladeD_correlations)[11] <- "Apoptosis-inducing factor 3"
+colnames(cladeD_correlations)[12] <- "Heat shock protein 70 "
+colnames(cladeD_correlations)[13] <- "Two pore calcium channel protein 1"
 colnames(cladeD_correlations)
 
 D = cor(cladeD_correlations)
 D.testRes = cor.mtest(cladeD_correlations, conf.level = 0.95)
-Durusdinium_pvalues <- as.data.frame(D.testRes$p)
-Durusdinium_pvalues
-Durusdinium_R <- as.data.frame(D)
-Durusdinium_R
 
-corrplot(D,p.mat = D.testRes$p,
+
+  corrplot(D,#p.mat = D.testRes$p,
          method = 'circle',
          diag = FALSE,
          type = 'upper',
-         #sig.level = c(0.001,0.01,0.05),
+         sig.level = c(0.001,0.01,0.05),
          pch.cex = 1,
          insig = 'label_sig',
          pch.col = 'white',
-         title = "Symbiodinium Correlations",
+         title = "Breviolum Correlations",
          tl.col = "black",
          tl.cex = 0.5,
         # cl.ratio = 0.15,
          tl.srt = 45,
          colorRampPalette(c("#0571b0","#92c5de","white","#f4a582","#ca0020"))(200))
-)
 ```
 

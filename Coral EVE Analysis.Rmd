@@ -244,8 +244,7 @@ test <- DESeq(dds_treatment)
 rld <- rlog(dds_treatment, blind=FALSE) 
 rrld <- assay(rld)
 # 1766 after filtering out low counts
-write.csv(rrld, file = "./all/DESeq2/treatment_rlog.csv") 
-getwd()
+write.csv(rrld, file = "./all/DESeq2/treatment_rlog.csv")  
 ```
 
 ## EVE
@@ -1117,6 +1116,13 @@ ggplot(data = results,
 ggarrange(OG0010466_species,OG0010466_status,
           ncol=2, widths = c(1.75,1.25),
           common.legend = TRUE, legend = "bottom",align = "hv")
+
+
+OG0010466_species_stats <- ggplot_build(OG0010466_species)
+OG0010466_species_stats$data
+
+OG0010466_status_stats <- ggplot_build(OG0010466_status)
+OG0010466_status_stats$data
 ```
 
 ###### FOXL2
@@ -1194,6 +1200,12 @@ ggplot(data = results,
 ggarrange(OG0011934_species,OG0011934_status,
           ncol=2, widths = c(1.75,1.25),
           common.legend = TRUE, legend = "bottom",align = "hv")
+
+OG0011934_species_stats <- ggplot_build(OG0011934_species)
+OG0011934_species_stats$data
+
+OG0011934_status_stats <- ggplot_build(OG0010466_status)
+OG0011934_status_stats$data
 ```
 
 ###### ADAMTS7 
@@ -1270,6 +1282,12 @@ ggplot(data = results,
 ggarrange(OG0011066_species,OG0011066_status,
           ncol=2, widths = c(1.75,1.25),
           common.legend = TRUE, legend = "bottom",align = "hv")
+
+OG0011066_species_stats <- ggplot_build(OG0011066_species)
+OG0011066_species_stats$data
+
+OG0011066_status_stats <- ggplot_build(OG0011066_status)
+OG0011066_status_stats$data
 ```
 
 ###### P4HTM
@@ -1308,6 +1326,12 @@ ggplot(data = results,
 ggarrange(OG0010904_species,OG0010904_status,
           ncol=2, widths = c(1.75,1.25),
           common.legend = TRUE, legend = "bottom",align = "hv")
+
+OG0010904_species_stats <- ggplot_build(OG0010904_species)
+OG0010904_species_stats$data
+
+OG0010904_status_stats <- ggplot_build(OG0010904_status)
+OG0010904_status_stats$data
 ```
 
 ###### NSMCE4A
@@ -1575,6 +1599,13 @@ ggplot(data = results,
 ggarrange(OG0010176_species,OG0010176_status,
           ncol=2, widths = c(1.75,1.25),
           common.legend = TRUE, legend = "bottom",align = "hv")
+
+
+OG0010176_species_stats <- ggplot_build(OG0010176_species)
+OG0010176_species_stats$data
+
+OG0010176_status_stats <- ggplot_build(OG0010176_status)
+OG0010176_status_stats$data
 ```
 
 ###### Together
@@ -1702,6 +1733,17 @@ for (i in 3:length(LS_rlogs)){
 }
 ```
 
+Create dataframe for Source Data file:
+```{r}
+# Create dataframe for Source Data file
+## Q6NWF4 - Vacuolar protein-sorting-associated protein 25
+## Q96LD1 - Zeta-sarcoglycan
+## Q4R5P6 - Cytoplasmic dynein 1 light intermediate chain 2
+
+colnames(LS_rlogs)
+source_data <- LS_rlogs[,c("Species","RelativeRisk","Q6NWF4","Q4R5P6","Q96LD1")]
+```
+
 ##### Scatterplots
 
 ```{r,tidy=TRUE}
@@ -1716,6 +1758,9 @@ Q96LD1 <-
    labs(y="Mean Expression", x = "Relative Risk", title = "Zeta-sarcoglycan")+
    stat_cor(label.x.npc = "left",label.y = 10.1)
 
+Q96LD1_stats <- ggplot_build(Q96LD1)
+Q96LD1_stats$data
+
 Q4R5P6 <- 
    ggplot(LS_rlogs,aes(x=RelativeRisk, y=Q4R5P6))+
    geom_point(aes(x=RelativeRisk, y=Q4R5P6, color=Species), position = "identity",size=3)+
@@ -1723,6 +1768,9 @@ Q4R5P6 <-
    #geom_text(label=row.names(LS_rlogs), nudge_y = -0.5, size =3 )+
    labs(y="Mean Expression", x = "Relative Risk", title = "Cytoplasmic dynein 1 light intermediate chain 2")+
    stat_cor(label.x.npc = "left",label.y = 10.5)
+
+Q4R5P6_stats <- ggplot_build(Q4R5P6)
+Q4R5P6_stats$data
    
 Q6NWF4 <- 
    ggplot(LS_rlogs,aes(x=RelativeRisk, y=Q6NWF4))+
@@ -1731,6 +1779,9 @@ Q6NWF4 <-
    #geom_text(label=row.names(LS_rlogs), nudge_y = -0.5,size=3)+
    labs(y="Mean Expression", x = "Relative Risk", title = "Vacuolar protein-sorting-associated protein 25")+
    stat_cor(label.x.npc = "left",label.y = 8.3)
+
+Q6NWF4_stats <- ggplot_build(Q6NWF4)
+Q6NWF4_stats$data
 ```
 
 ### Correlate to LGR
@@ -1770,6 +1821,27 @@ for (i in 3:length(LS_rlogs)){
 }
 ```
 
+Create dataframe for Source Data file:
+```{r}
+# Create dataframe for Source Data file
+## Q9D428 - Golgin subfamily A member 7B
+## Q8VEE0 - Ribulose-phosphate 3-epimerase
+## Q8TBH0 - Arrestin domain-containing protein 2
+## Q63ZP1 - PHD finger protein 10
+## Q8VBV7 - COP9 signalosome complex subunit 8
+
+colnames(LS_rlogs)
+source_data$LGR <- LS_rlogs$LGR
+source_data$Q8TBH0 <- LS_rlogs$Q8TBH0
+source_data$Q8VBV7 <- LS_rlogs$Q8VBV7
+source_data$Q9D428 <- LS_rlogs$Q9D428
+source_data$Q8VEE0 <- LS_rlogs$Q8VEE0
+source_data$Q63ZP1 <- LS_rlogs$Q63ZP1
+source_data
+
+write.csv(source_data,file="~/OneDrive - University of Texas at Arlington/Dissertation/SCTLD/Files_for_R/January_2022/REVISIONS/Final Revision/fig3b_sourceData.csv")
+```
+
 ##### Scatterplots
 ```{r,tidy=TRUE}
 LS_rlogs$Species <- factor(LS_rlogs$Species, levels = c("cnat","oann","pstr","past","mcav"))
@@ -1782,6 +1854,10 @@ Q63ZP1 <-
    labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "PHD finger protein 10")+
    stat_cor(label.x.npc = "left",label.y = 3.7)
 
+Q63ZP1_stats <- ggplot_build(Q63ZP1)
+Q63ZP1_stats$data
+
+
 Q8VEE0 <- 
    ggplot(LS_rlogs,aes(x=LGR, y=Q8VEE0))+
    geom_point(aes(x=LGR, y=Q8VEE0, color=Species), position = "identity",size=3)+
@@ -1789,6 +1865,9 @@ Q8VEE0 <-
    #geom_text(label=row.names(LS_rlogs), nudge_y = -0.5)+
    labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "Ribulose-phosphate 3-epimerase")+
    stat_cor(label.x.npc = "left",label.y = .8)
+
+Q8VEE0_stats <- ggplot_build(Q8VEE0)
+Q8VEE0_stats$data
 
 Q8VBV7 <- 
    ggplot(LS_rlogs,aes(x=LGR, y=Q8VBV7))+
@@ -1798,6 +1877,9 @@ Q8VBV7 <-
    labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "COP9 signalosome complex subunit 8")+
    stat_cor(label.x.npc = "left",label.y = 6.5)
 
+Q8VBV7_stats <- ggplot_build(Q8VBV7)
+Q8VBV7_stats$data
+
 Q9D428 <- 
    ggplot(LS_rlogs,aes(x=LGR, y=Q9D428))+
    geom_point(aes(x=LGR, y=Q9D428, color=Species), position = "identity",size=3)+
@@ -1806,6 +1888,10 @@ Q9D428 <-
    labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "Golgin subfamily A member 7B")+
    stat_cor(label.x.npc = "left",label.y = .2)
 
+Q9D428_stats <- ggplot_build(Q9D428)
+Q9D428_stats$data
+
+
 Q8TBH0 <- 
    ggplot(LS_rlogs,aes(x=LGR, y=Q8TBH0))+
    geom_point(aes(x=LGR, y=Q8TBH0, color=Species), position = "identity",size=4)+
@@ -1813,9 +1899,13 @@ Q8TBH0 <-
 #   geom_text(label=row.names(LS_rlogs), nudge_y = -0.5)+
    labs(y="Mean Expression", x = "Avg. Lesion Growth Rate", title = "Arrestin domain-containing protein 2")+
    stat_cor(label.x.npc = "left",label.y = 9.3)
+
+Q8TBH0_stats <- ggplot_build(Q8TBH0)
+Q8TBH0_stats$data
+
 ```
 
-```{r LGR,fig.height=8,fig.width=7,dpi=200}  
+```{r LGR,fig.height=8,fig.width=8,dpi=300}  
 ggarrange(Q96LD1,Q4R5P6,Q6NWF4,
           Q63ZP1,Q8VEE0,Q8VBV7,Q9D428,Q8TBH0,
           ncol = 3, nrow = 3, legend = "none",

@@ -908,6 +908,14 @@ ggplot(data = results,
 ggarrange(OG0019527_species,OG0019527_status,
            ncol=2, widths = c(1.75,1.25),
           common.legend = TRUE, legend = "bottom",align = "hv")
+
+
+OG0019527_species_stats <- ggplot_build(OG0019527_species)
+OG0019527_species_stats$data
+
+OG0019527_status_stats <- ggplot_build(OG0019527_status)
+OG0019527_status_stats$data
+
 ```
 ###### PSMD10
 ```{r}
@@ -985,6 +993,12 @@ ggplot(data = results,
 ggarrange(OG0016351_species,OG0016351_status,
           ncol=2, widths = c(1.75,1.25),
           common.legend = TRUE, legend = "bottom",align = "hv")
+
+OG0016351_species_stats <- ggplot_build(OG0016351_species)
+OG0016351_species_stats$data
+
+OG0016351_status_stats <- ggplot_build(OG0016351_status)
+OG0016351_status_stats$data
 ```
 
 ###### DBR
@@ -1024,6 +1038,13 @@ ggplot(data = results,
 ggarrange(OG0020669_species,OG0020669_status,
           ncol=2, widths = c(1.75,1.25),
           common.legend = TRUE, legend = "bottom",align = "hv")
+
+
+OG0020669_species_stats <- ggplot_build(OG0020669_species)
+OG0020669_species_stats$data
+
+OG0020669_status_stats <- ggplot_build(OG0020669_status)
+OG0020669_status_stats$data
 ```
 
 
