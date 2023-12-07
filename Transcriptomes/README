@@ -29,7 +29,7 @@ Filtration Steps:
 2. This assembly was blasted against a Master Coral database using blastn (can be found at https://zenodo.org/record/7838980
 3. Reads with less than 95% pident and shorter than 150 bp were filtered out
 4. cdbfasta on the longest isoform and then the list of filtered contigs were concatenated to this .cidx file using cdbyank
-5. TransDecoder.LongOrfs to identify longest isoform
+5. TransDecoder.LongOrfs to identify longest open reading frame
 6. TransDecoder.Predict to produce predicted proteome
 7. cd-hit to remove similar sequences from predicted proteome
 8. Sequence names grabbed from this proteome and extracted from the longest isoform fasta file from step 1
