@@ -1,0 +1,35 @@
+##### Transcriptomes Generated for the SCTLD Transmission Experiment in USVI 2019 #####
+If used, please include the following citation:
+Beavers, K.M., Van Buren, E.W., Rossin, A.M. et al. Stony coral tissue loss disease induces transcriptional signatures of in situ degradation of dysfunctional Symbiodiniaceae. Nat Commun 14, 2915 (2023). https://doi.org/10.1038/s41467-023-38612-4
+
+
+1. Cnat_reference_transcriptome.fa
+	-assembled de novo by Bradford Dimos
+	-filtered by Kelsey Beavers
+	-50,582 contigs
+2. Mcav_reference_transcriptome.fa
+	-assembled genome-guided (Rippe et al. 2021) by Bradford Dimos
+	-filtered by Kelsey Beavers
+	-38,865 contigs
+3. Oann_reference_transcirptome.fa
+	-assembled genome-guided using O.fav genome (Prada et al. 2016) by Kelsey Beavers
+	-filtered by Kelsey Beavers
+	-34,741 contigs
+4. Past_reference_transcriptome.fa
+	-assembled by Bradford Dimos
+	-filtered by Kelsey Beavers
+	-37,167 contigs
+5. Pstr_reference_transcrptome.fa
+	-assembled by Kelsey Beavers
+	-filtered by Kelsey Beavers
+	-23,116 contigs
+
+Filtration Steps:
+1. Longest isoform was obtained with Trinity/util/misc/get_longest_isoform_seq_per_trinity_gene.pl
+2. This assembly was blasted against a Master Coral database using blastn (can be found at https://zenodo.org/record/7838980
+3. Reads with less than 95% pident and shorter than 150 bp were filtered out
+4. cdbfasta on the longest isoform and then the list of filtered contigs were concatenated to this .cidx file using cdbyank
+5. TransDecoder.LongOrfs to identify longest isoform
+6. TransDecoder.Predict to produce predicted proteome
+7. cd-hit to remove similar sequences from predicted proteome
+8. Sequence names grabbed from this proteome and extracted from the longest isoform fasta file from step 1
