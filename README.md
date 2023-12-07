@@ -9,6 +9,8 @@ Any questions, email kelsey.beavers@mavs.uta.edu
   4. Symbiont DEG Analysis - code used to quantify DEGs in each symbiont genera
   5. Coral EVE Analysis - code used to for analyses of highly variable and lineage-specific single-copy coral orthologs
   6. Symbiont EVE Analysis - code used to for analyses of highly variable and lineage-specific single-copy symbiont orthologs
+
+## This repository now also contains all of the reference transcriptomes and their annotations generated from this study in the tarball *Transcriptomes.tar.gz*
   
 ## Not included in this repository but publicly accessible:
   1. Raw RNAseq data generated from the transmission experiment - https://www.ncbi.nlm.nih.gov/bioproject/PRJNA860922
