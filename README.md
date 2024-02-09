@@ -12,6 +12,8 @@ Any questions, email kelsey.beavers@mavs.uta.edu
 
 ## This repository now also contains all of the reference transcriptomes and their annotations generated from this study in the folder *Transcriptomes*
   
+## This repository now also contains all of the coral predicted proteomes generated from this study in the folder *Proteomes*
+
 ## Not included in this repository but publicly accessible:
   1. Raw RNAseq data generated from the transmission experiment - https://www.ncbi.nlm.nih.gov/bioproject/PRJNA860922
   2. MasterCoral_db used in "Command_Line_Code" to generate coral-only de novo reference transcriptomes - Kelsey Beavers. (2023). Master Coral database used in USVI SCTLD Transmission Experiment Gene Expression Analysis [Data set]. Zenodo. https://doi.org/10.5281/zenodo.7838980
