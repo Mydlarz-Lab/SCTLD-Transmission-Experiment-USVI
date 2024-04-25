@@ -1,6 +1,6 @@
 # SCTLD-Transmission-Experiment-USVI
 
-Any questions, email kelsey.beavers@mavs.uta.edu
+Any questions, email kbeavers@tacc.utexas.edu
 
 ## This repository contains 6 Rmarkdown files:
   1. Command_Line_Code - code used to filter reads, assemble and annotate transcriptomes, and quantify transcripts
