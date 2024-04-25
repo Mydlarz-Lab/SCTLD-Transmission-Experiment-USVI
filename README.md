@@ -1,5 +1,8 @@
 # SCTLD-Transmission-Experiment-USVI
 
+This code is for the following published paper: 
+Beavers, K.M., Van Buren, E.W., Rossin, A.M. et al. Stony coral tissue loss disease induces transcriptional signatures of in situ degradation of dysfunctional Symbiodiniaceae. Nat Commun 14, 2915 (2023). https://doi.org/10.1038/s41467-023-38612-4
+
 Any questions, email kbeavers@tacc.utexas.edu
 
 ## This repository contains 6 Rmarkdown files:
